@@ -1,0 +1,33 @@
+{
+  "env": {
+    "browser": true,
+    "es2020": true
+  },
+  "globals": {
+    "mapboxgl": "readonly"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "script"
+  },
+  "ignorePatterns": [
+    "**/*.d.ts",
+    "node_modules/"
+  ],
+  "extends": [
+    "eslint:recommended"
+  ],
+  "rules": {
+    "no-console": "off",
+    "no-var": "error",
+    "prefer-const": "error",
+    "eqeqeq": ["error", "always"],
+    "no-unused-vars": [
+      "warn",
+      { "args": "none", "argsIgnorePattern": "^_" }
+    ],
+    "curly": ["error", "all"]
+  }
+}
+
+

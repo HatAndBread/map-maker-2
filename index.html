@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Map Maker</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link href="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.css" rel="stylesheet" />
+    <script src="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+      }
+      #map {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 100%;
+      }
+    </style>
+    <script type="module" src="./main.js"></script>
+  </head>
+  <body>
+    <div id="app">
+      <div style="z-index: 1000; position: absolute; top: 0; left: 0">
+        <div>
+          <div id="street-view-icon" draggable="true">
+            <img src="./street-view.svg" alt="Street View" width="20" height="20"/>
+          </div>
+        </div>
+        <input type="file" id="gpx-input" name="gpx-input" accept="application/gpx+xml" />
+        <div>
+          <label for="map-style">Map Style</label>
+          <select id="map-style" name="map-style">
+            <option value="mapbox://styles/mapbox/streets-v11">Streets</option>
+            <option value="mapbox://styles/mapbox/outdoors-v11">Outdoors</option>
+            <option value="osm:raster">OSM (Raster)</option>
+            <option value="mapbox://styles/hatandbeard/clcn4yuyh000014nyxtgmilu7">Japan</option>
+            <option value="mapbox://styles/hatandbeard/clco3a4v7001j15rqepdt67y1">Japan-En</option>
+            <option value="mapbox://styles/mapbox/light-v11">Light</option>
+            <option value="mapbox://styles/mapbox/dark-v11">Dark</option>
+            <option value="mapbox://styles/mapbox/satellite-v9">Satellite</option>
+            <option value="mapbox://styles/mapbox/satellite-streets-v11">Satellite Streets</option>
+            <option value="mapbox://styles/mapbox/navigation-preview-day-v4">Navigation Preview Day</option>
+            <option value="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json">Positron</option>
+            <option value="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json">Voyager</option>
+            <option value="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json">Dark Matter</option>
+          </select>
+        </div>
+        <div>
+          <label for="measurement-system">Measurement System</label>
+          <select id="measurement-system" name="measurement-system">
+            <option value="METRIC">Metric</option>
+            <option value="IMPERIAL">Imperial</option>
+          </select>
+        </div>
+        <button id="undo">Undo</button>
+        <button id="redo">Redo</button>
+      </div>
+      <div style="z-index: 1000; position: absolute; top: 0; right: 0; min-width: 240px; background-color: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; margin: 10px;">
+        <div>
+          Elevation: <span id="elevation-value"></span>
+        </div>
+        <div>
+          Longitude: <span id="pointer-lng"></span>
+        </div>
+        <div>
+          Latitude: <span id="pointer-lat"></span>
+        </div>
+      </div>
+      <div id="map"></div>
+    </div>
+  </body>
+</html>
