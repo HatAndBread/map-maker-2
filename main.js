@@ -9,8 +9,9 @@ import { setRoutesData } from "./create-map.js";
 import getDirections from "./directions.js";
 import { Undo } from "./undo.js";
 import {ControlPointManager} from "./control-point.js";
+import { haptic } from "./haptic.js";
 
-const undoManager = new Undo();
+export const undoManager = new Undo();
 const state = createState(
   {
     elevation: null,
@@ -39,12 +40,15 @@ const state = createState(
     },
     routes: (value) => {
       setRoutesData(value);
-      controlPointManager.update()
-      console.log("ROUTES CHANGED!")
-      console.log(state.routes)
+      controlPointManager.update();
     },
   }
 );
+
+export const forceMapUpdate = () => {
+  state.routes = state.routes;
+};
+
 if (uiElements.deleteDBButton) {
   uiElements.deleteDBButton.onclick = () => {
     deleteDB();
@@ -121,7 +125,7 @@ if (uiElements.gpxInput) {
   });
 });
 
-const controlPointManager = new ControlPointManager({map, routes: state.routes});
+const controlPointManager = new ControlPointManager({ map, routes: state.routes });
 
 const addIframe = (lng, lat) => {
   const container = document.createElement("div");
@@ -165,18 +169,86 @@ const addIframe = (lng, lat) => {
 let longMouseTimer;
 let longTouchTimer;
 let mapHeld = false;
+export const clearLongMouseTimer = () => {
+  if (longMouseTimer) {
+    clearTimeout(longMouseTimer);
+    longMouseTimer = null;
+  }
+  if (longTouchTimer) {
+    clearTimeout(longTouchTimer);
+    longTouchTimer = null;
+  }
+};
 map.on("mousedown", (e) => {
   longMouseTimer = setTimeout(() => {
     mapHeld = true;
     console.log("Long mouse hold detected!", e.lngLat);
-    // handle long press here
+    const currentRoute = state.routes[state.currentEditingRoute];
+    if (currentRoute.length < 2) return;
+    const px = e.lngLat.lng;
+    const py = e.lngLat.lat;
+    let bestPoint = null;
+    let bestPointIndex = 0;
+    let bestD2 = Infinity;
+    for (let i = 0; i < currentRoute.length - 1; i++) {
+      const a = currentRoute[i];
+      const b = currentRoute[i + 1];
+      if (!a || !b) continue;
+      if (!Number.isFinite(a.lon) || !Number.isFinite(a.lat) || !Number.isFinite(b.lon) || !Number.isFinite(b.lat))
+        continue;
+      const ax = a.lon;
+      const ay = a.lat;
+      const bx = b.lon;
+      const by = b.lat;
+      const dx = bx - ax;
+      const dy = by - ay;
+      const len2 = dx * dx + dy * dy;
+      let t = 0;
+      if (len2 > 0) {
+        t = ((px - ax) * dx + (py - ay) * dy) / len2;
+        // Clamp to the segment (endpoints allowed)
+        t = Math.max(0, Math.min(1, t));
+      }
+      const qx = ax + t * dx;
+      const qy = ay + t * dy;
+      const dqx = qx - px;
+      const dqy = qy - py;
+      const d2 = dqx * dqx + dqy * dqy;
+      if (d2 < bestD2) {
+        bestD2 = d2;
+        bestPointIndex = i;
+        bestPoint = { lon: qx, lat: qy };
+      }
+    }
+    if (!bestPoint) return;
+    const distanceToBestPoint = calculations.distance(bestPoint, { lon: e.lngLat.lng, lat: e.lngLat.lat });
+    console.log({ bestPoint, distanceToBestPoint, bestPointIndex });
+
+    if (distanceToBestPoint > 10) return;
+    haptic();
+    // insert a lng/lat between the indexes of the best and second best points
+    const redo = () => {
+      const newPoint = { lon: bestPoint.lon, lat: bestPoint.lat, isControlPoint: true };
+      currentRoute.splice(bestPointIndex + 1, 0, newPoint);
+      forceMapUpdate();
+    };
+    const undo = () => {
+      currentRoute.splice(bestPointIndex + 1, 1);
+      forceMapUpdate();
+    };
+    undoManager.add({ undo, redo });
   }, 500); // 500ms threshold
 });
+
+map.on("mouseup", () => {
+  clearLongMouseTimer();
+});
+
+map.on("move", () => {
+  clearLongMouseTimer();
+});
 map.on("touchstart", (e) => {
-  longTouchTimer = setTimeout(() => {
-    console.log("Long touch hold detected!", e.lngLat);
-    // handle long press here
-  }, 500); // 500ms threshold
+  longTouchTimer = setTimeout(() => {}, 500); // 500ms threshold
 });
 
 map.on("click", (e) => {
@@ -208,13 +280,13 @@ map.on("click", (e) => {
           coords.forEach((coordinate) => {
             editingRoute.push(coordinate);
           });
-          state.routes = state.routes;
+          forceMapUpdate();
         };
         const undo = () => {
           for (let i = coords.length - 1; i >= 0; i--) {
             editingRoute.pop();
           }
-          state.routes = state.routes;
+          forceMapUpdate();
         };
         undoManager.add({ undo, redo });
       })
@@ -230,18 +302,17 @@ map.on("click", (e) => {
         isControlPoint: true,
       };
       editingRoute.push(value);
-      state.routes = state.routes;
+      forceMapUpdate();
     };
     const undo = () => {
       editingRoute.pop();
-      state.routes = state.routes;
+      forceMapUpdate();
     };
     undoManager.add({ undo, redo });
   }
   console.log(state.routes);
 });
 
-const handleMouseUp = () => {
-  clearTimeout(longMouseTimer);
-};
-map.on("mouseup", handleMouseUp);
+map.on("mouseup", () => {
+  clearLongMouseTimer();
+});

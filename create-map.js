@@ -139,6 +139,31 @@ const addRoutes = () => {
   }
 };
 
+const ensureSectionPreview = () => {
+  if (!map.getSource("section-preview")) {
+    map.addSource("section-preview", {
+      type: "geojson",
+      data: {
+        type: "FeatureCollection",
+        features: [],
+      },
+    });
+  }
+  if (!map.getLayer("section-preview-line")) {
+    map.addLayer({
+      id: "section-preview-line",
+      type: "line",
+      source: "section-preview",
+      layout: { "line-join": "round", "line-cap": "round" },
+      paint: {
+        "line-color": "#ff0000",
+        "line-width": 1.5,
+        "line-opacity": 0.3,
+      },
+    });
+  }
+};
+
 const ensureFeatureCollection = (id) => {
   const color = constants.COLLECTION_COLORS[id] || "#000000";
   if (!map.getSource(id)) {
@@ -206,6 +231,7 @@ const handleLoad = () => {
   drawOverpassTrails();
   ensureTerrain();
   addRoutes();
+  ensureSectionPreview();
 };
 
 map.on("load", () => {
@@ -215,6 +241,29 @@ map.on("load", () => {
 map.on("style.load", () => {
   handleLoad();
 });
+
+export const setSectionPreviewData = (coordinates) => {
+  let source = map.getSource("section-preview");
+  if (!source) {
+    ensureSectionPreview();
+    source = map.getSource("section-preview");
+    if (!source) return;
+  }
+  source.setData({
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: {
+          id: "section-preview",
+          tags: {},
+          name: "Section Preview",
+        },
+        geometry: { type: "LineString", coordinates },
+      },
+    ],
+  });
+};
 
 const setSourceData = (id) => {
   let source = map.getSource(id);
