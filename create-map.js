@@ -316,6 +316,7 @@ export const setRoutesData = (routes) => {
       },
     })),
   };
+  console.log(routes);
   const src = map.getSource("routes");
   if (src) {
     src.setData(fc);
@@ -395,3 +396,18 @@ map.on("moveend", () => {
       console.error(err);
     });
 });
+map.addControl(
+  new mapboxgl.GeolocateControl({
+    positionOptions: { enableHighAccuracy: true },
+    trackUserLocation: true,
+    showUserHeading: true,
+  }),
+  "top-right"
+);
+map.addControl(
+  new mapboxgl.NavigationControl({
+    showCompass: true,
+    showZoom: false, // optional
+  }),
+  "top-right"
+);

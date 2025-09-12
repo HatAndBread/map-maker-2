@@ -1,8 +1,9 @@
 import getDirections from "./directions.js";
-import { setSectionPreviewData } from "./create-map.js";
+import { map, setSectionPreviewData } from "./create-map.js";
 import { forceMapUpdate } from "./main.js";
 import { undoManager } from "./main.js";
 import { haptic } from "./haptic.js";
+import calculations from "./calcuations.js";
 import { clearLongMouseTimer } from "./main.js";
 
 export class ControlPointManager {
@@ -95,6 +96,7 @@ export class ControlPoint {
       clearLongMouseTimer();
       const lngLat = this.marker.getLngLat();
       console.log("New position:", lngLat.lng, lngLat.lat);
+      haptic();
       setSectionPreviewData([]);
       if (typeof this.undoToApply === "function" && typeof this.redoToApply === "function") {
         undoManager.add({ undo: this.undoToApply, redo: this.redoToApply });
@@ -114,13 +116,21 @@ export class ControlPoint {
         this.suppressNextClick = false;
         return;
       }
-      console.log("Click!");
       clearLongMouseTimer();
       e.stopPropagation();
+      haptic.confirm();
       const redo = () => {
         this.route[this.index] = { lon: this.lon, lat: this.lat, isControlPoint: false };
+        // if is last point, delete everything from the last control point to the end
+        if (this.isLastInRoute()) {
+          const lastControlPointIndex = this.previousControlPointIndex();
+          this.route.splice(lastControlPointIndex + 1);
+        } else if (this.isFirstInRoute()) {
+          const nextControlPointIndex = this.nextControlPointIndex();
+          console.log({ nextControlPointIndex });
+          this.route.splice(0, nextControlPointIndex);
+        }
         forceMapUpdate();
-        haptic();
       };
       const undo = () => {
         this.route[this.index] = { lon: this.lon, lat: this.lat, isControlPoint: true };
@@ -161,8 +171,8 @@ export class ControlPoint {
                 const insertAt = prevAbs + 1; // insert after the previous control point
                 this.redoToApply = () => {
                   this.route.splice(insertAt);
-                  coordinates.forEach(([lon, lat], index) => {
-                    this.route.push({ lon, lat, isControlPoint: index === coordinates.length - 1 });
+                  coordinates.forEach(([lon, lat, ele], index) => {
+                    this.route.push({ lon, lat, ele, isControlPoint: index === coordinates.length - 1 });
                   });
                   forceMapUpdate();
                 };
@@ -199,7 +209,12 @@ export class ControlPoint {
 
                 const routeRef = this.route;
                 const routeSnapshot = [...routeRef];
-                const points = coordinates.map(([lon, lat], index) => ({ lon, lat, isControlPoint: index === 0 }));
+                const points = coordinates.map(([lon, lat, ele], index) => ({
+                  lon,
+                  lat,
+                  ele,
+                  isControlPoint: index === 0,
+                }));
                 this.redoToApply = () => {
                   // Replace only the segment BEFORE the next control point; keep the next control point intact
                   const pointIndex = this.index;
@@ -211,7 +226,6 @@ export class ControlPoint {
                 this.undoToApply = () => {
                   routeRef.length = 0;
                   routeRef.push(...routeSnapshot);
-                  console.log(routeRef);
                   forceMapUpdate();
                 };
                 if (
@@ -256,7 +270,7 @@ export class ControlPoint {
 
               const routeRef = this.route;
               const routeSnapshot = [...routeRef];
-              const points = coordinates.map(([lon, lat]) => ({ lon, lat, isControlPoint: false }));
+              const points = coordinates.map(([lon, lat, ele]) => ({ lon, lat, ele, isControlPoint: false }));
               // mark the inserted point closest to drag position as a control point
               if (points.length > 0) {
                 let minIdx = 0;
@@ -302,8 +316,9 @@ export class ControlPoint {
           const routeRef = this.route;
           const routeSnapshot = [...routeRef];
 
+          const ele = calculations.elevation(lngLat.lng, lngLat.lat);
           this.redoToApply = () => {
-            routeRef[pointIndex] = { lon: lngLat.lng, lat: lngLat.lat, isControlPoint: true };
+            routeRef[pointIndex] = { lon: lngLat.lng, lat: lngLat.lat, ele, isControlPoint: true };
             forceMapUpdate();
           };
           this.undoToApply = () => {
@@ -314,7 +329,36 @@ export class ControlPoint {
         }
       }
     };
+    this.marker.on("dragstart", () => {
+      haptic();
+    });
     this.marker.on("drag", this.onDrag);
+  }
+
+  isLastInRoute() {
+    return this.index === this.route.length - 1;
+  }
+
+  isFirstInRoute() {
+    return this.index === 0;
+  }
+
+  nextControlPointIndex() {
+    // Find the next control point after this.index
+    for (let i = this.index + 1; i < this.route.length; i++) {
+      const p = this.route[i];
+      if (p && p.isControlPoint) return i;
+    }
+    return -1;
+  }
+
+  previousControlPointIndex() {
+    // Find the previous control point before this.index
+    for (let i = this.index - 1; i >= 0; i--) {
+      const p = this.route[i];
+      if (p && p.isControlPoint) return i;
+    }
+    return -1;
   }
 
   remove() {
