@@ -63,6 +63,14 @@ export class ControlPointManager {
       });
     });
   }
+
+  removeOrphanControlPoints(routeIndex) {
+    for (let i = this.routes.length; i < this.controlPoints[routeIndex].length; i++) {
+      this.controlPoints[i].forEach((controlPoint) => {
+        controlPoint.remove();
+      });
+    }
+  }
 }
 
 export class ControlPoint {

@@ -55,6 +55,15 @@ export const uiElements = {
   get streetviewPreview() {
     return /** @type {HTMLIFrameElement | null} */ (document.getElementById("streetview-preview"));
   },
+  get newRouteButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("new-route"));
+  },
+  get deleteRouteButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("delete-route"));
+  },
+  get currentRouteSelect() {
+    return /** @type {HTMLSelectElement | null} */ (document.getElementById("current-route-select"));
+  },
 };
 
 // set the initial values to the storage values

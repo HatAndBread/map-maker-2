@@ -40,6 +40,15 @@ const setRouteDistance3dText = () => {
       (state.measurementSystem === "METRIC" ? "km" : "mi");
   }
 };
+const updateCurrentRouteSelect = (routes) => {
+  if (!uiElements.currentRouteSelect) return;
+  uiElements.currentRouteSelect.innerHTML = "";
+  routes.forEach((route, index) => {
+    if (!uiElements.currentRouteSelect) return;
+    uiElements.currentRouteSelect.innerHTML += `<option value="${index}">Route ${index + 1}</option>`;
+  });
+  uiElements.currentRouteSelect.value = state.currentEditingRoute;
+};
 
 const updateElevationText = (elevation) => {
   if (!uiElements.elevationValue || elevation === null) return;
@@ -63,6 +72,12 @@ export const state = createState(
     measurementSystem: storage.measurementSystem,
   },
   {
+    currentEditingRoute: (value) => {
+      if (!uiElements.currentRouteSelect) return;
+      uiElements.currentRouteSelect.value = value;
+      console.log({ value });
+      console.log(uiElements.currentRouteSelect.value);
+    },
     elevation: (value) => {
       updateElevationText(value);
     },
@@ -97,9 +112,11 @@ export const state = createState(
       controlPointManager.update();
       setRouteDistanceText();
       setRouteDistance3dText();
+      updateCurrentRouteSelect(value);
     },
   }
 );
+updateCurrentRouteSelect(state.routes);
 
 export const forceMapUpdate = () => {
   state.routes = state.routes;
@@ -432,6 +449,39 @@ if (uiElements.gpxInput) {
       };
       reader.readAsText(file);
     }
+  };
+}
+
+if (uiElements.newRouteButton) {
+  uiElements.newRouteButton.onclick = () => {
+    state.routes.push([]);
+    state.currentEditingRoute = state.routes.length - 1;
+    forceMapUpdate();
+  };
+}
+
+if (uiElements.deleteRouteButton) {
+  uiElements.deleteRouteButton.onclick = () => {
+    const yes = confirm("Are you sure you want to delete this route?");
+    if (!yes) return;
+    state.routes.splice(state.currentEditingRoute, 1);
+    if (state.routes.length === 0) {
+      state.routes.push([]);
+    }
+    if (state.currentEditingRoute >= state.routes.length) {
+      state.currentEditingRoute = state.routes.length - 1;
+    }
+    controlPointManager.removeOrphanControlPoints(state.currentEditingRoute);
+    forceMapUpdate();
+  };
+}
+
+if (uiElements.currentRouteSelect) {
+  uiElements.currentRouteSelect.onchange = () => {
+    if (!uiElements.currentRouteSelect) return;
+    state.currentEditingRoute = Number(uiElements.currentRouteSelect.value);
+    console.log({ currentEditingRoute: state.currentEditingRoute });
+    forceMapUpdate();
   };
 }
 

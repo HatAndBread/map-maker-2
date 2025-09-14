@@ -234,6 +234,7 @@
         padding: 6px 10px;
         color: #e5e7eb;
         font-weight: 600;
+        font-size: 1.2em;
         letter-spacing: 0.01em;
         background: rgba(255,255,255,0.06);
         border: 1px solid rgba(255,255,255,0.18);
@@ -368,9 +369,20 @@
                 <option value="IMPERIAL">Imperial</option>
               </select>
             </div>
+            <div>
+              <label for="current-route-select">Current Route</label>
+              <select id="current-route-select" name="current-route-select">
+              </select>
+            </div>
             <div class="button-row" style="align-items:center;">
               <input type="file" id="gpx-input" name="gpx-input" accept="application/gpx+xml" />
               <label for="gpx-input" id="gpx-label">Upload GPX</label>
+            </div>
+            <div class="button-row" style="align-items:center;">
+              <button id="new-route">New Route</button>
+            </div>
+            <div class="button-row" style="align-items:center;">
+              <button id="delete-route">Delete Route</button>
             </div>
             <div style="display:flex; gap:8px;">
               <input name="file-name-input" type="text" id="file-name-input" placeholder="File Name"/>
