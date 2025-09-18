@@ -3,6 +3,8 @@ import { uiElements } from "./ui-elements.js";
 import { overpass } from "./overpass.js";
 import constants from "./constants.js";
 import publicKeys from "./public-keys.js";
+import { haptic } from "./haptic.js";
+import { forceMapUpdate, state } from "./main.js";
 
 mapboxgl.accessToken = publicKeys.mapbox;
 // Provide a minimal OSM raster style when the special option is selected
@@ -236,6 +238,14 @@ const handleLoad = () => {
 
 map.on("load", () => {
   handleLoad();
+  const firstPoint = state.routes[0]?.[0];
+  if (firstPoint) {
+    map.setCenter([firstPoint.lon, firstPoint.lat]);
+    map.zoomTo(15);
+    forceMapUpdate();
+  } else {
+    forceMapUpdate();
+  }
 });
 
 map.on("style.load", () => {
@@ -411,3 +421,176 @@ map.addControl(
   }),
   "top-right"
 );
+
+const addIframe = (lng, lat) => {
+  const container = document.createElement("div");
+  const iframe = document.createElement("iframe");
+  const closeButton = document.createElement("button");
+
+  closeButton.textContent = "Close";
+  closeButton.style.position = "absolute";
+  closeButton.style.top = "10px";
+  closeButton.style.right = "10px";
+  closeButton.style.zIndex = "1001";
+  closeButton.style.padding = "8px 16px";
+  closeButton.style.backgroundColor = "white";
+  closeButton.style.border = "1px solid #ccc";
+  closeButton.style.borderRadius = "4px";
+  closeButton.style.cursor = "pointer";
+
+  closeButton.onclick = () => {
+    container.remove();
+  };
+
+  iframe.src = `https://www.google.com/maps/embed/v1/streetview?key=${publicKeys.google}&location=${lat},${lng}`;
+  iframe.width = "100%";
+  iframe.height = "100%";
+  iframe.style.border = "none";
+  iframe.loading = "lazy";
+  iframe.referrerPolicy = "no-referrer-when-downgrade";
+
+  container.style.position = "absolute";
+  container.style.top = "0";
+  container.style.left = "0";
+  container.style.width = "100%";
+  container.style.height = "100%";
+  container.style.zIndex = "1000";
+
+  container.appendChild(iframe);
+  container.appendChild(closeButton);
+  document.body.appendChild(container);
+};
+
+export const setupStreetViewDrag = () => {
+  const icon = uiElements.streetViewIcon;
+  if (!icon) return;
+  // improve touch behavior
+  icon.style.touchAction = "none";
+
+  let dragging = false;
+  /** @type {HTMLElement|null} */
+  let ghost = null;
+  let wasDragPanEnabled = true;
+  /** @type {{x:number,y:number}|null} */
+  let dragStartCenter = null;
+  /** @type {number} */
+  let dragStartMs = 0;
+
+  const getClientFromEvent = (e) => {
+    if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    if (e.changedTouches && e.changedTouches[0])
+      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+    return { x: e.clientX, y: e.clientY };
+  };
+
+  const cleanupGhosts = () => {
+    document.querySelectorAll(".sv-ghost").forEach((n) => n.remove());
+  };
+
+  const start = (e) => {
+    if (dragging) return;
+    dragging = true;
+    // disable map panning while dragging icon
+    // preserve state to re-enable
+    wasDragPanEnabled = map.dragPan.isEnabled();
+    if (wasDragPanEnabled) map.dragPan.disable();
+
+    cleanupGhosts();
+    // remember the icon's center on screen to allow canceling if dropped back
+    const iconRect = icon.getBoundingClientRect();
+    dragStartCenter = { x: iconRect.left + iconRect.width / 2, y: iconRect.top + iconRect.height / 2 };
+    dragStartMs = Date.now();
+    ghost = document.createElement("div");
+    ghost.className = "sv-ghost";
+    const img = icon.querySelector("img");
+    if (img) {
+      const gi = /** @type {HTMLImageElement} */ (img.cloneNode(true));
+      ghost.appendChild(gi);
+    }
+    ghost.style.position = "fixed";
+    ghost.style.pointerEvents = "none";
+    ghost.style.opacity = "0.9";
+    ghost.style.zIndex = "10000";
+    document.body.appendChild(ghost);
+    move(e);
+  };
+
+  let lastPreviewMs = 0;
+  const move = (e) => {
+    if (!dragging || !ghost) return;
+    const { x, y } = getClientFromEvent(e);
+    ghost.style.left = x - 10 + "px";
+    ghost.style.top = y - 10 + "px";
+    const lngLat = map.unproject([x, y]);
+    if (e.cancelable) e.preventDefault();
+    const preview = uiElements.streetviewPreview;
+    if (preview) {
+      const elapsed = Date.now() - dragStartMs;
+      // Only show/update preview after 1s of sustained drag
+      if (elapsed < 1000) {
+        preview.style.display = "none";
+        return;
+      }
+      preview.style.display = "block";
+      const now = Date.now();
+      if (now - lastPreviewMs > 2000) {
+        lastPreviewMs = now;
+        const lat = Number(lngLat.lat.toFixed(5));
+        const lng = Number(lngLat.lng.toFixed(5));
+        const next = `https://www.google.com/maps/embed/v1/streetview?key=${publicKeys.google}&location=${lat},${lng}`;
+        if (preview.src !== next) {
+          preview.src = next;
+        }
+      }
+    }
+  };
+
+  const end = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    cleanupGhosts();
+    ghost = null;
+    const preview = uiElements.streetviewPreview;
+    if (preview) {
+      preview.style.display = "none";
+    }
+
+    // compute map lng/lat from drop point and open Street View iframe
+    const { x, y } = getClientFromEvent(e);
+    // If dropped near the original icon spot, treat as cancel
+    if (dragStartCenter) {
+      const dx = x - dragStartCenter.x;
+      const dy = y - dragStartCenter.y;
+      const d2 = dx * dx + dy * dy;
+      const cancelRadiusPx = 24;
+      if (d2 <= cancelRadiusPx * cancelRadiusPx) {
+        // hide preview and restore pan, then exit
+        const preview = uiElements.streetviewPreview;
+        if (preview) preview.style.display = "none";
+        if (wasDragPanEnabled) map.dragPan.enable();
+        dragStartCenter = null;
+        return;
+      }
+    }
+    dragStartCenter = null;
+    const mapEl = uiElements.map;
+    if (mapEl) {
+      const rect = mapEl.getBoundingClientRect();
+      const pt = { x: x - rect.left, y: y - rect.top };
+      const lngLat = map.unproject(pt);
+      if (lngLat && Number.isFinite(lngLat.lng) && Number.isFinite(lngLat.lat)) {
+        addIframe(lngLat.lng, lngLat.lat);
+        haptic();
+      }
+    }
+
+    // restore map panning
+    if (wasDragPanEnabled) map.dragPan.enable();
+  };
+
+  // Pointer events only (covers mouse + touch on modern browsers)
+  icon.addEventListener("pointerdown", start);
+  window.addEventListener("pointermove", move);
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+};

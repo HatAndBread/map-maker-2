@@ -62,13 +62,19 @@ export class ControlPointManager {
         }
       });
     });
+    this.removeOrphanControlPoints();
   }
 
-  removeOrphanControlPoints(routeIndex) {
-    for (let i = this.routes.length; i < this.controlPoints[routeIndex].length; i++) {
-      this.controlPoints[i].forEach((controlPoint) => {
-        controlPoint.remove();
-      });
+  removeOrphanControlPoints() {
+    console.log(this.controlPoints.length, this.routes.length);
+    if (this.controlPoints.length > this.routes.length) {
+      for (let i = this.routes.length; i < this.controlPoints.length; i++) {
+        this.controlPoints[i].forEach((controlPoint) => {
+          if (!controlPoint) return;
+          controlPoint.remove();
+        });
+      }
+      this.controlPoints.splice(this.routes.length);
     }
   }
 }

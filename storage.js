@@ -28,6 +28,7 @@ async function readState() {
         latestLngLat: constants.START_LNG_LAT,
         measurementSystem: constants.DEFAULT_MEASUREMENT_SYSTEM,
         mapStyle: constants.DEFAULT_MAP_STYLE,
+        latestRoutes: [[]],
       };
       resolve(value);
     };
@@ -56,6 +57,7 @@ export function deleteDB() {
   stuff.onsuccess = () => console.log("DB deleted");
   stuff.onerror = () => console.error("DB deletion failed");
 }
+window.deleteDB = deleteDB;
 
 const initialState = await readState();
 export const storage = new Proxy(initialState, {

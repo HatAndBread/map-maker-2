@@ -1,22 +1,22 @@
 import { map, resolveStyle } from "./create-map.js";
 import { uiElements } from "./ui-elements.js";
 import { createState } from "./create-state.js";
-import { deleteDB, storage } from "./storage.js";
+import { storage } from "./storage.js";
 import calculations from "./calcuations.js";
-import publicKeys from "./public-keys.js";
 import { parseGpx, routeToGpx } from "./gpx.js";
-import { setRoutesData } from "./create-map.js";
+import { setRoutesData, setupStreetViewDrag } from "./create-map.js";
 import getDirections, { MAPBOX_PROFILES } from "./directions.js";
 import { Undo } from "./undo.js";
 import { ControlPointManager } from "./control-point.js";
 import { haptic } from "./haptic.js";
+import { showSuccessPulse } from "./visuals.js";
 
 export const undoManager = new Undo();
+const params = new URLSearchParams(window.location.search);
 
 const setRouteDistanceText = () => {
   const route = state.routes[state.currentEditingRoute];
   const distance = calculations.routeDistance(route);
-  const routeDistance3d = calculations.routeDistance3d(route);
   if (uiElements.distanceValue) {
     uiElements.distanceValue.textContent =
       (state.measurementSystem === "METRIC"
@@ -40,15 +40,6 @@ const setRouteDistance3dText = () => {
       (state.measurementSystem === "METRIC" ? "km" : "mi");
   }
 };
-const updateCurrentRouteSelect = (routes) => {
-  if (!uiElements.currentRouteSelect) return;
-  uiElements.currentRouteSelect.innerHTML = "";
-  routes.forEach((route, index) => {
-    if (!uiElements.currentRouteSelect) return;
-    uiElements.currentRouteSelect.innerHTML += `<option value="${index}">Route ${index + 1}</option>`;
-  });
-  uiElements.currentRouteSelect.value = state.currentEditingRoute;
-};
 
 const updateElevationText = (elevation) => {
   if (!uiElements.elevationValue || elevation === null) return;
@@ -64,20 +55,15 @@ export const state = createState(
     elevation: null,
     pointerLng: null,
     pointerLat: null,
-    routes: [[]],
+    routes: storage.latestRoutes,
     currentEditingRoute: 0,
     straightLine: false,
     mapboxProfile: MAPBOX_PROFILES[0],
     filename: null,
     measurementSystem: storage.measurementSystem,
+    isDisplayOnly: params.get("displayOnly") === "true",
   },
   {
-    currentEditingRoute: (value) => {
-      if (!uiElements.currentRouteSelect) return;
-      uiElements.currentRouteSelect.value = value;
-      console.log({ value });
-      console.log(uiElements.currentRouteSelect.value);
-    },
     elevation: (value) => {
       updateElevationText(value);
     },
@@ -112,237 +98,17 @@ export const state = createState(
       controlPointManager.update();
       setRouteDistanceText();
       setRouteDistance3dText();
-      updateCurrentRouteSelect(value);
+      storage.latestRoutes = value;
     },
   }
 );
-updateCurrentRouteSelect(state.routes);
 
 export const forceMapUpdate = () => {
   state.routes = state.routes;
 };
 
 // Subtle visual cue at a lng/lat: high-contrast outward ripple (visible beneath a finger)
-const showSuccessPulse = (lng, lat) => {
-  try {
-    const pt = map.project([Number(lng), Number(lat)]);
-    const rect = map.getCanvas().getBoundingClientRect();
 
-    const overlay = document.createElement("div");
-    overlay.style.position = "fixed";
-    overlay.style.left = "0";
-    overlay.style.top = "0";
-    overlay.style.width = "100vw";
-    overlay.style.height = "100vh";
-    overlay.style.pointerEvents = "none";
-    overlay.style.zIndex = "2147483647";
-    overlay.style.margin = "0";
-    overlay.style.padding = "0";
-    overlay.style.border = "0";
-
-    const centerX = rect.left + pt.x;
-    const centerY = rect.top + pt.y;
-
-    // Soft dark backdrop to ensure visibility on light map tiles
-    const backdrop = document.createElement("div");
-    backdrop.style.position = "absolute";
-    backdrop.style.left = centerX + "px";
-    backdrop.style.top = centerY + "px";
-    backdrop.style.width = "28px";
-    backdrop.style.height = "28px";
-    backdrop.style.transform = "translate(-50%, -50%) scale(0.7)";
-    backdrop.style.borderRadius = "50%";
-    backdrop.style.background = "rgba(0,0,0,0.28)";
-    backdrop.style.filter = "blur(1px)";
-    backdrop.style.transition = "transform 640ms ease-out, opacity 640ms ease-out";
-    backdrop.style.willChange = "transform, opacity";
-
-    const makeRing = ({ size, border, color, startScale, endScale }) => {
-      const r = document.createElement("div");
-      r.style.position = "absolute";
-      r.style.left = centerX + "px";
-      r.style.top = centerY + "px";
-      r.style.width = size + "px";
-      r.style.height = size + "px";
-      r.style.transform = `translate(-50%, -50%) scale(${startScale})`;
-      r.style.border = `${border}px solid ${color}`;
-      r.style.borderRadius = "50%";
-      r.style.boxSizing = "border-box";
-      r.style.transition = "transform 640ms ease-out, opacity 640ms ease-out";
-      r.style.willChange = "transform, opacity";
-      requestAnimationFrame(() => {
-        r.style.transform = `translate(-50%, -50%) scale(${endScale})`;
-        r.style.opacity = "0";
-      });
-      return r;
-    };
-
-    const darkRing = makeRing({ size: 18, border: 2, color: "rgba(0,0,0,0.55)", startScale: 0.9, endScale: 5.6 });
-    const lightRing = makeRing({
-      size: 18,
-      border: 2,
-      color: "rgba(255,255,255,0.95)",
-      startScale: 0.8,
-      endScale: 6.2,
-    });
-
-    overlay.appendChild(backdrop);
-    overlay.appendChild(darkRing);
-    overlay.appendChild(lightRing);
-    document.body.appendChild(overlay);
-
-    requestAnimationFrame(() => {
-      backdrop.style.transform = "translate(-50%, -50%) scale(1.6)";
-      backdrop.style.opacity = "0";
-    });
-
-    setTimeout(() => {
-      overlay.remove();
-    }, 700);
-  } catch (e) {
-    // ignore
-  }
-};
-
-const setupStreetViewDrag = () => {
-  const icon = uiElements.streetViewIcon;
-  if (!icon) return;
-  // improve touch behavior
-  icon.style.touchAction = "none";
-
-  let dragging = false;
-  /** @type {HTMLElement|null} */
-  let ghost = null;
-  let wasDragPanEnabled = true;
-  /** @type {{x:number,y:number}|null} */
-  let dragStartCenter = null;
-  /** @type {number} */
-  let dragStartMs = 0;
-
-  const getClientFromEvent = (e) => {
-    if (e.touches && e.touches[0]) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-    if (e.changedTouches && e.changedTouches[0])
-      return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
-    return { x: e.clientX, y: e.clientY };
-  };
-
-  const cleanupGhosts = () => {
-    document.querySelectorAll(".sv-ghost").forEach((n) => n.remove());
-  };
-
-  const start = (e) => {
-    if (dragging) return;
-    dragging = true;
-    // disable map panning while dragging icon
-    // preserve state to re-enable
-    wasDragPanEnabled = map.dragPan.isEnabled();
-    if (wasDragPanEnabled) map.dragPan.disable();
-
-    cleanupGhosts();
-    // remember the icon's center on screen to allow canceling if dropped back
-    const iconRect = icon.getBoundingClientRect();
-    dragStartCenter = { x: iconRect.left + iconRect.width / 2, y: iconRect.top + iconRect.height / 2 };
-    dragStartMs = Date.now();
-    ghost = document.createElement("div");
-    ghost.className = "sv-ghost";
-    const img = icon.querySelector("img");
-    if (img) {
-      const gi = /** @type {HTMLImageElement} */ (img.cloneNode(true));
-      ghost.appendChild(gi);
-    }
-    ghost.style.position = "fixed";
-    ghost.style.pointerEvents = "none";
-    ghost.style.opacity = "0.9";
-    ghost.style.zIndex = "10000";
-    document.body.appendChild(ghost);
-    move(e);
-  };
-
-  let lastPreviewMs = 0;
-  const move = (e) => {
-    if (!dragging || !ghost) return;
-    const { x, y } = getClientFromEvent(e);
-    ghost.style.left = x - 10 + "px";
-    ghost.style.top = y - 10 + "px";
-    const lngLat = map.unproject([x, y]);
-    if (e.cancelable) e.preventDefault();
-    const preview = uiElements.streetviewPreview;
-    if (preview) {
-      const elapsed = Date.now() - dragStartMs;
-      // Only show/update preview after 1s of sustained drag
-      if (elapsed < 1000) {
-        preview.style.display = "none";
-        return;
-      }
-      preview.style.display = "block";
-      const now = Date.now();
-      if (now - lastPreviewMs > 2000) {
-        lastPreviewMs = now;
-        const lat = Number(lngLat.lat.toFixed(5));
-        const lng = Number(lngLat.lng.toFixed(5));
-        const next = `https://www.google.com/maps/embed/v1/streetview?key=${publicKeys.google}&location=${lat},${lng}`;
-        if (preview.src !== next) {
-          preview.src = next;
-        }
-      }
-    }
-  };
-
-  const end = (e) => {
-    if (!dragging) return;
-    dragging = false;
-    cleanupGhosts();
-    ghost = null;
-    const preview = uiElements.streetviewPreview;
-    if (preview) {
-      preview.style.display = "none";
-    }
-
-    // compute map lng/lat from drop point and open Street View iframe
-    const { x, y } = getClientFromEvent(e);
-    // If dropped near the original icon spot, treat as cancel
-    if (dragStartCenter) {
-      const dx = x - dragStartCenter.x;
-      const dy = y - dragStartCenter.y;
-      const d2 = dx * dx + dy * dy;
-      const cancelRadiusPx = 24;
-      if (d2 <= cancelRadiusPx * cancelRadiusPx) {
-        // hide preview and restore pan, then exit
-        const preview = uiElements.streetviewPreview;
-        if (preview) preview.style.display = "none";
-        if (wasDragPanEnabled) map.dragPan.enable();
-        dragStartCenter = null;
-        return;
-      }
-    }
-    dragStartCenter = null;
-    const mapEl = uiElements.map;
-    if (mapEl) {
-      const rect = mapEl.getBoundingClientRect();
-      const pt = { x: x - rect.left, y: y - rect.top };
-      const lngLat = map.unproject(pt);
-      if (lngLat && Number.isFinite(lngLat.lng) && Number.isFinite(lngLat.lat)) {
-        addIframe(lngLat.lng, lngLat.lat);
-        haptic();
-      }
-    }
-
-    // restore map panning
-    if (wasDragPanEnabled) map.dragPan.enable();
-  };
-
-  // Pointer events only (covers mouse + touch on modern browsers)
-  icon.addEventListener("pointerdown", start);
-  window.addEventListener("pointermove", move);
-  window.addEventListener("pointerup", end);
-  window.addEventListener("pointercancel", end);
-};
-
-if (uiElements.deleteDBButton) {
-  uiElements.deleteDBButton.onclick = () => {
-    deleteDB();
-  };
-}
 if (uiElements.measurementSystem) {
   uiElements.measurementSystem.onchange = () => {
     if (!uiElements.measurementSystem) return;
@@ -452,36 +218,36 @@ if (uiElements.gpxInput) {
   };
 }
 
-if (uiElements.newRouteButton) {
-  uiElements.newRouteButton.onclick = () => {
-    state.routes.push([]);
-    state.currentEditingRoute = state.routes.length - 1;
-    forceMapUpdate();
-  };
-}
-
 if (uiElements.deleteRouteButton) {
   uiElements.deleteRouteButton.onclick = () => {
     const yes = confirm("Are you sure you want to delete this route?");
     if (!yes) return;
-    state.routes.splice(state.currentEditingRoute, 1);
-    if (state.routes.length === 0) {
-      state.routes.push([]);
-    }
-    if (state.currentEditingRoute >= state.routes.length) {
-      state.currentEditingRoute = state.routes.length - 1;
-    }
-    controlPointManager.removeOrphanControlPoints(state.currentEditingRoute);
-    forceMapUpdate();
+    const currentRoute = [...state.routes[state.currentEditingRoute]];
+    const redo = () => {
+      state.routes[state.currentEditingRoute].length = 0;
+      forceMapUpdate();
+    };
+    const undo = () => {
+      currentRoute.forEach((point) => {
+        state.routes[state.currentEditingRoute].push(point);
+      });
+      forceMapUpdate();
+    };
+    undoManager.add({ undo, redo });
   };
 }
 
-if (uiElements.currentRouteSelect) {
-  uiElements.currentRouteSelect.onchange = () => {
-    if (!uiElements.currentRouteSelect) return;
-    state.currentEditingRoute = Number(uiElements.currentRouteSelect.value);
-    console.log({ currentEditingRoute: state.currentEditingRoute });
-    forceMapUpdate();
+if (uiElements.reverseRouteButton) {
+  uiElements.reverseRouteButton.onclick = () => {
+    const redo = () => {
+      state.routes[state.currentEditingRoute].reverse();
+      forceMapUpdate();
+    };
+    const undo = () => {
+      state.routes[state.currentEditingRoute].reverse();
+      forceMapUpdate();
+    };
+    undoManager.add({ undo, redo });
   };
 }
 
@@ -494,45 +260,6 @@ if (uiElements.currentRouteSelect) {
 });
 
 const controlPointManager = new ControlPointManager({ map, routes: state.routes });
-
-const addIframe = (lng, lat) => {
-  const container = document.createElement("div");
-  const iframe = document.createElement("iframe");
-  const closeButton = document.createElement("button");
-
-  closeButton.textContent = "Close";
-  closeButton.style.position = "absolute";
-  closeButton.style.top = "10px";
-  closeButton.style.right = "10px";
-  closeButton.style.zIndex = "1001";
-  closeButton.style.padding = "8px 16px";
-  closeButton.style.backgroundColor = "white";
-  closeButton.style.border = "1px solid #ccc";
-  closeButton.style.borderRadius = "4px";
-  closeButton.style.cursor = "pointer";
-
-  closeButton.onclick = () => {
-    container.remove();
-  };
-
-  iframe.src = `https://www.google.com/maps/embed/v1/streetview?key=${publicKeys.google}&location=${lat},${lng}`;
-  iframe.width = "100%";
-  iframe.height = "100%";
-  iframe.style.border = "none";
-  iframe.loading = "lazy";
-  iframe.referrerPolicy = "no-referrer-when-downgrade";
-
-  container.style.position = "absolute";
-  container.style.top = "0";
-  container.style.left = "0";
-  container.style.width = "100%";
-  container.style.height = "100%";
-  container.style.zIndex = "1000";
-
-  container.appendChild(iframe);
-  container.appendChild(closeButton);
-  document.body.appendChild(container);
-};
 
 let longMouseTimer;
 let mapHeld = false;
@@ -652,9 +379,10 @@ map.on("click", (e) => {
     mapHeld = false;
     return;
   }
-  const editingRoute = state.routes[state.currentEditingRoute];
-  if (editingRoute.length > 0) {
-    const start = editingRoute[editingRoute.length - 1];
+  const { currentEditingRoute } = state;
+  const currentRouteLength = state.routes[currentEditingRoute].length;
+  if (currentRouteLength > 0) {
+    const start = state.routes[currentEditingRoute][currentRouteLength - 1];
     const end = {
       lon: e.lngLat.lng,
       lat: e.lngLat.lat,
@@ -678,13 +406,13 @@ map.on("click", (e) => {
         }
       }
       const redo = () => {
-        editingRoute.push(...points);
-        editingRoute.push({ lon: end.lon, lat: end.lat, ele: end.ele, isControlPoint: true });
+        state.routes[currentEditingRoute].push(...points);
+        state.routes[currentEditingRoute].push({ lon: end.lon, lat: end.lat, ele: end.ele, isControlPoint: true });
         forceMapUpdate();
       };
       const undo = () => {
         const removeCount = points.length + 1;
-        for (let i = 0; i < removeCount; i++) editingRoute.pop();
+        for (let i = 0; i < removeCount; i++) state.routes[currentEditingRoute].pop();
         forceMapUpdate();
       };
       undoManager.add({ undo, redo });
@@ -706,13 +434,13 @@ map.on("click", (e) => {
         }));
         const redo = () => {
           coords.forEach((coordinate) => {
-            editingRoute.push(coordinate);
+            state.routes[currentEditingRoute].push(coordinate);
           });
           forceMapUpdate();
         };
         const undo = () => {
           for (let i = coords.length - 1; i >= 0; i--) {
-            editingRoute.pop();
+            state.routes[currentEditingRoute].pop();
           }
           forceMapUpdate();
         };
@@ -730,11 +458,11 @@ map.on("click", (e) => {
         ele: calculations.elevation(e.lngLat.lng, e.lngLat.lat),
         isControlPoint: true,
       };
-      editingRoute.push(value);
+      state.routes[currentEditingRoute].push(value);
       forceMapUpdate();
     };
     const undo = () => {
-      editingRoute.pop();
+      state.routes[currentEditingRoute].pop();
       forceMapUpdate();
     };
     undoManager.add({ undo, redo });

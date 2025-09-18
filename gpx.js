@@ -17,9 +17,12 @@ export const parseGpx = (rawGpx) => {
       const ele = eleTag ? Number(Number(eleTag.textContent).toFixed(1)) : calculations.elevation(lon, lat);
 
       const ext = trackPoint.getElementsByTagName("extensions")?.[0];
-      const isControlPoint = ext
+      let isControlPoint = ext
         ? ext.getElementsByTagNameNS("*", "isControlPoint")?.[0]?.localName === "isControlPoint"
         : false;
+      if (j === 0 || j === trackPoints.length - 1) {
+        isControlPoint = true;
+      }
       trackPointsArray[j] = { lat, lon, ele, isControlPoint };
     }
     routes[i] = trackPointsArray;
