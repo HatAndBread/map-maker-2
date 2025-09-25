@@ -49,9 +49,6 @@ export const uiElements = {
   get fileNameInput() {
     return /** @type {HTMLInputElement | null} */ (document.getElementById("file-name-input"));
   },
-  get saveFileButton() {
-    return /** @type {HTMLButtonElement | null} */ (document.getElementById("save-file"));
-  },
   get streetviewPreview() {
     return /** @type {HTMLIFrameElement | null} */ (document.getElementById("streetview-preview"));
   },
@@ -60,6 +57,36 @@ export const uiElements = {
   },
   get reverseRouteButton() {
     return /** @type {HTMLButtonElement | null} */ (document.getElementById("reverse-route"));
+  },
+  get googleDocsOpenButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("google-docs-open"));
+  },
+  get saveModal() {
+    return /** @type {HTMLDialogElement | null} */ (document.getElementById("save-modal"));
+  },
+  get openSaveModalButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("open-save-modal"));
+  },
+  get importModal() {
+    return /** @type {HTMLDialogElement | null} */ (document.getElementById("import-modal"));
+  },
+  get importModalOpenButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("import-modal-open"));
+  },
+  get saveFileButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("save-file"));
+  },
+  get saveFileGoogleButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("save-file-google"));
+  },
+  get saveToGoogleSuccessModal() {
+    return /** @type {HTMLDialogElement | null} */ (document.getElementById("save-to-google-success-modal"));
+  },
+  get copyShareLinkButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("copy-share-link"));
+  },
+  get shareLink() {
+    return /** @type {HTMLSpanElement | null} */ (document.getElementById("share-link"));
   },
 };
 

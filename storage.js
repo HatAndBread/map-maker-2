@@ -14,6 +14,19 @@ function openStateDB() {
   });
 }
 
+const getDefaultState = () => {
+  return {
+    trails: {},
+    tracks: {},
+    queriedBounds: [],
+    latestLngLat: constants.START_LNG_LAT,
+    measurementSystem: constants.DEFAULT_MEASUREMENT_SYSTEM,
+    mapStyle: constants.DEFAULT_MAP_STYLE,
+    latestRoutes: [[]],
+    savedGoogleDocs: [],
+  };
+};
+
 async function readState() {
   const db = await openStateDB();
   return new Promise((resolve, reject) => {
@@ -21,15 +34,7 @@ async function readState() {
     const store = tx.objectStore(constants.STORE_NAME);
     const getReq = store.get("root");
     getReq.onsuccess = () => {
-      const value = getReq.result || {
-        trails: {},
-        tracks: {},
-        queriedBounds: [],
-        latestLngLat: constants.START_LNG_LAT,
-        measurementSystem: constants.DEFAULT_MEASUREMENT_SYSTEM,
-        mapStyle: constants.DEFAULT_MAP_STYLE,
-        latestRoutes: [[]],
-      };
+      const value = getReq.result || getDefaultState();
       resolve(value);
     };
     getReq.onerror = () => reject(getReq.error);
@@ -48,7 +53,10 @@ function writeState(state) {
       tx.onabort = () => db.close();
       tx.onerror = () => db.close();
     })
-    .catch(() => {});
+    .catch(() => {
+      // clear the state
+      writeState(getDefaultState());
+    });
 }
 
 export function deleteDB() {

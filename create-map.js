@@ -216,34 +216,14 @@ const ensureFeatureCollection = (id) => {
   }
 };
 const ensureTerrain = () => {
+  map.setFog({});
   if (!map.getSource("mapbox-dem")) {
     map.addSource("mapbox-dem", {
       type: "raster-dem",
-      url: "mapbox://mapbox.terrain-rgb",
-      tileSize: 512,
-      maxzoom: 14,
+      url: "mapbox://mapbox.mapbox-terrain-dem-v1",
     });
   }
   map.setTerrain({ source: "mapbox-dem" });
-};
-
-// Add a sky layer for atmospheric background when the map is pitched
-const ensureSky = () => {
-  if (map.getLayer("sky")) return;
-  try {
-    map.addLayer({
-      id: "sky",
-      type: "sky",
-      paint: {
-        "sky-type": "atmosphere",
-        "sky-atmosphere-sun": [0.0, 90.0],
-        "sky-atmosphere-sun-intensity": 10,
-      },
-    });
-  } catch (e) {
-    // ignore if style doesn't support sky
-    console.warn("Sky layer not added:", e);
-  }
 };
 
 const handleLoad = () => {
@@ -251,7 +231,6 @@ const handleLoad = () => {
   ensureFeatureCollection("tracks");
   drawOverpassTrails();
   ensureTerrain();
-  ensureSky();
   addRoutes();
   ensureSectionPreview();
 };

@@ -7,6 +7,8 @@
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
     <link href="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.css" rel="stylesheet" />
     <script src="https://api.mapbox.com/mapbox-gl-js/v3.14.0/mapbox-gl.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
       body {
         margin: 0;
@@ -30,9 +32,9 @@
         padding: 8px 8px;
         max-width: 170px;
         border-radius: 14px;
-        background: linear-gradient(135deg, rgba(20,20,30,0.65), rgba(20,20,30,0.35));
-        border: 1px solid rgba(255,255,255,0.2);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.65), rgba(20, 20, 30, 0.35));
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         color: #e5e7eb;
@@ -51,35 +53,59 @@
       #toolbox input[type="text"],
       #toolbox input[type="checkbox"] {
         border-radius: 8px;
-        border: 1px solid rgba(255,255,255,0.18);
-        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
         color: #e5e7eb;
         padding: 6px 8px;
         outline: none;
       }
       #toolbox select,
-      #toolbox input[type="text"] { width: 100%; }
-      #toolbox select { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-      
+      #toolbox input[type="text"] {
+        width: 100%;
+      }
+      #toolbox select {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
       #toolbox button {
         appearance: none;
-        border: 1px solid rgba(255,255,255,0.18);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         border-radius: 8px;
         padding: 6px 10px;
         color: #e5e7eb;
         font-weight: 600;
         letter-spacing: 0.01em;
-        background: rgba(255,255,255,0.06);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         cursor: pointer;
         transition: background 150ms ease, border-color 150ms ease;
       }
-      #toolbox button:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.24); }
-      #toolbox button#redo { background: rgba(255,255,255,0.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04); }
-      #toolbox .button-row { display: flex; gap: 6px; flex-direction: column; align-items: stretch !important; }
-      #toolbox .button-row > * { flex: 1 1 auto; width: 100%; box-sizing: border-box; }
+      #toolbox button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      #toolbox button#redo {
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      }
+      #toolbox .button-row {
+        display: flex;
+        gap: 6px;
+        flex-direction: column;
+        align-items: stretch !important;
+      }
+      #toolbox .button-row > * {
+        flex: 1 1 auto;
+        width: 100%;
+        box-sizing: border-box;
+      }
       #toolbox .button-row > button,
-      #toolbox .button-row > label { flex: 1 1 auto; width: 100%; }
+      #toolbox .button-row > label {
+        flex: 1 1 auto;
+        width: 100%;
+      }
       #street-view-icon {
         position: absolute;
         bottom: 16px;
@@ -91,17 +117,22 @@
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        background: linear-gradient(135deg, rgba(20,20,30,0.65), rgba(20,20,30,0.35));
-        border: 1px solid rgba(255,255,255,0.2);
-        box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.65), rgba(20, 20, 30, 0.35));
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         cursor: grab;
       }
-      #street-view-icon:hover { background: linear-gradient(135deg, rgba(20,20,30,0.7), rgba(20,20,30,0.42)); border-color: rgba(255,255,255,0.24); }
-      #street-view-icon:active { cursor: grabbing; }
+      #street-view-icon:hover {
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.7), rgba(20, 20, 30, 0.42));
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      #street-view-icon:active {
+        cursor: grabbing;
+      }
       #street-view-icon img {
-        filter: drop-shadow(0 3px 10px rgba(0,0,0,0.45));
+        filter: drop-shadow(0 3px 10px rgba(0, 0, 0, 0.45));
       }
       /* Floating actions: Street View + Undo/Redo */
       #floating-actions {
@@ -113,50 +144,64 @@
         align-items: center;
         gap: 8px;
       }
-      #floating-actions .buttons-undo-redo { display: flex; gap: 6px; }
-      #floating-actions #street-view-icon { position: static; bottom: auto; right: auto; flex: 0 0 auto; }
-      #floating-actions .buttons-undo-redo button { flex: 0 0 auto; }
+      #floating-actions .buttons-undo-redo {
+        display: flex;
+        gap: 6px;
+      }
+      #floating-actions #street-view-icon {
+        position: static;
+        bottom: auto;
+        right: auto;
+        flex: 0 0 auto;
+      }
+      #floating-actions .buttons-undo-redo button {
+        flex: 0 0 auto;
+      }
       #floating-actions .buttons-undo-redo button {
         appearance: none;
-        border: 1px solid rgba(255,255,255,0.28);
+        border: 1px solid rgba(255, 255, 255, 0.28);
         border-radius: 8px;
         padding: 6px 10px;
-        color: rgba(255,255,255,0.95);
+        color: rgba(255, 255, 255, 0.95);
         font-weight: 600;
         letter-spacing: 0.01em;
-        background: linear-gradient(135deg, rgba(20,20,30,0.72), rgba(20,20,30,0.52));
-        box-shadow: 0 6px 14px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.06);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.72), rgba(20, 20, 30, 0.52));
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
         cursor: pointer;
         transition: transform 120ms ease, background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
       }
       #floating-actions .buttons-undo-redo button:hover {
-        background: linear-gradient(135deg, rgba(20,20,30,0.82), rgba(20,20,30,0.62));
-        border-color: rgba(255,255,255,0.32);
-        box-shadow: 0 9px 18px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.07);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.82), rgba(20, 20, 30, 0.62));
+        border-color: rgba(255, 255, 255, 0.32);
+        box-shadow: 0 9px 18px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
       }
-      #floating-actions .buttons-undo-redo button:active { transform: none; }
+      #floating-actions .buttons-undo-redo button:active {
+        transform: none;
+      }
       /* Elevate the Street View pill a bit more */
       #floating-actions #street-view-icon {
         width: 44px;
         height: 44px;
         border-radius: 12px;
-        background: linear-gradient(135deg, rgba(20,20,30,0.7), rgba(20,20,30,0.4));
-        border: 1px solid rgba(255,255,255,0.22);
-        box-shadow: 0 10px 22px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.7), rgba(20, 20, 30, 0.4));
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
         transition: background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
       }
       #floating-actions #street-view-icon:hover {
-        background: linear-gradient(135deg, rgba(20,20,30,0.78), rgba(20,20,30,0.46));
-        border-color: rgba(255,255,255,0.28);
-        box-shadow: 0 12px 26px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.07);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.78), rgba(20, 20, 30, 0.46));
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: 0 12px 26px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
       }
       #floating-actions #street-view-icon:active {
-        background: linear-gradient(135deg, rgba(20,20,30,0.74), rgba(20,20,30,0.44));
-        border-color: rgba(255,255,255,0.26);
-        box-shadow: 0 10px 22px rgba(0,0,0,0.45), inset 0 0 0 1px rgba(255,255,255,0.06);
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.74), rgba(20, 20, 30, 0.44));
+        border-color: rgba(255, 255, 255, 0.26);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       }
       /* Collapsible section */
-      #toolbox-more { margin-top: 6px; }
+      #toolbox-more {
+        margin-top: 6px;
+      }
       #toolbox-more > summary {
         list-style: none;
         display: flex;
@@ -165,33 +210,41 @@
         width: 100%;
         height: 20px;
         border-radius: 8px;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.14);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         cursor: pointer;
       }
-      #toolbox-more > summary::-webkit-details-marker { display: none; }
+      #toolbox-more > summary::-webkit-details-marker {
+        display: none;
+      }
       #toolbox-more > summary svg {
         width: 12px;
         height: 12px;
-        stroke: rgba(255,255,255,0.9);
+        stroke: rgba(255, 255, 255, 0.9);
         stroke-width: 2;
         stroke-linecap: round;
         stroke-linejoin: round;
         fill: none;
         transition: transform 200ms ease, stroke 200ms ease;
       }
-      #toolbox-more[open] > summary { background: transparent; }
-      #toolbox-more[open] > summary svg { transform: rotate(180deg); }
+      #toolbox-more[open] > summary {
+        background: transparent;
+      }
+      #toolbox-more[open] > summary svg {
+        transform: rotate(180deg);
+      }
       /* Desktop: always open, hide chevron */
       @media (min-width: 481px) {
-        #toolbox-more > summary { display: none !important; }
+        #toolbox-more > summary {
+          display: none !important;
+        }
         #toolbox-more .toolbox-more-content {
           position: relative;
           margin-top: 8px;
           padding-top: 8px;
-          border-top: 1px solid rgba(255,255,255,0.14);
-          box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+          border-top: 1px solid rgba(255, 255, 255, 0.14);
+          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
         }
       }
       /* Mobile tweaks: keep top-left, shrink footprint */
@@ -204,14 +257,34 @@
           border-radius: 10px;
           font-size: 11px;
         }
-        #toolbox label { font-size: 10px; }
+        #toolbox label {
+          font-size: 10px;
+        }
         #toolbox button,
-        #toolbox label[for="gpx-input"] { padding: 8px 10px; border-radius: 10px; }
-        #toolbox-more { margin-top: 4px; }
-        #toolbox-more > summary { width: 28px; height: 28px; }
-        #toolbox-more > summary::before { width: 9px; height: 9px; border-right-width: 2px; border-bottom-width: 2px; }
-        #toolbox-more[open] { max-height: 46vh; overflow: auto; }
-        #toolbox .button-row { gap: 6px; }
+        #toolbox label[for="gpx-input"] {
+          padding: 8px 10px;
+          border-radius: 10px;
+        }
+        #toolbox-more {
+          margin-top: 4px;
+        }
+        #toolbox-more > summary {
+          width: 28px;
+          height: 28px;
+        }
+        #toolbox-more > summary::before {
+          width: 9px;
+          height: 9px;
+          border-right-width: 2px;
+          border-bottom-width: 2px;
+        }
+        #toolbox-more[open] {
+          max-height: 46vh;
+          overflow: auto;
+        }
+        #toolbox .button-row {
+          gap: 6px;
+        }
       }
       /* Prettier file input */
       #gpx-input {
@@ -236,22 +309,27 @@
         font-weight: 600;
         font-size: 1.2em;
         letter-spacing: 0.01em;
-        background: rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.18);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
         cursor: pointer;
         transition: background 150ms ease, border-color 150ms ease;
       }
       #toolbox label[for="gpx-input"]:hover {
-        background: rgba(255,255,255,0.1);
-        border-color: rgba(255,255,255,0.24);
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.24);
       }
       #toolbox label[for="gpx-input"].dropping {
-        background: rgba(255,255,255,0.14);
-        border-color: rgba(255,255,255,0.28);
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       }
-      .toolbox-more-content { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+      .toolbox-more-content {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
       /* Rad-as-heck custom checkbox */
       #straight-line {
         appearance: none;
@@ -260,19 +338,19 @@
         height: 14px;
         border-radius: 4px;
         position: relative;
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.18);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.18);
         cursor: pointer;
         vertical-align: middle;
         transition: background 120ms ease, border-color 120ms ease;
         margin-left: 6px;
       }
       #straight-line:hover {
-        background: rgba(255,255,255,0.08);
-        border-color: rgba(255,255,255,0.22);
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.22);
       }
       #straight-line:focus-visible {
-        outline: 2px solid rgba(255,255,255,0.28);
+        outline: 2px solid rgba(255, 255, 255, 0.28);
         outline-offset: 2px;
       }
       #straight-line::after {
@@ -282,17 +360,19 @@
         left: 4px;
         width: 3px;
         height: 7px;
-        border-right: 2px solid rgba(255,255,255,0.95);
-        border-bottom: 2px solid rgba(255,255,255,0.95);
+        border-right: 2px solid rgba(255, 255, 255, 0.95);
+        border-bottom: 2px solid rgba(255, 255, 255, 0.95);
         transform: rotate(45deg);
         opacity: 0;
         transition: opacity 120ms ease;
       }
       #straight-line:checked {
-        background: rgba(255,255,255,0.12);
-        border-color: rgba(255,255,255,0.24);
+        background: rgba(255, 255, 255, 0.12);
+        border-color: rgba(255, 255, 255, 0.24);
       }
-      #straight-line:checked::after { opacity: 1; }
+      #straight-line:checked::after {
+        opacity: 1;
+      }
       /* Mobile tweaks: keep top-left, shrink footprint; full-width subtle summary */
       @media (max-width: 480px) {
         #toolbox {
@@ -303,23 +383,320 @@
           border-radius: 10px;
           font-size: 11px;
         }
-        #toolbox label { font-size: 10px; }
+        #toolbox label {
+          font-size: 10px;
+        }
         #toolbox button,
-        #toolbox label[for="gpx-input"] { padding: 8px 10px; border-radius: 10px; }
-        #toolbox-more { margin-top: 4px; }
-        #toolbox-more > summary { height: 16px; border-radius: 6px; }
-        #toolbox-more > summary svg { width: 10px; height: 10px; }
-        .toolbox-more-content { margin-top: 8px; gap: 8px; }
-        #toolbox-more[open] { max-height: 46vh; overflow: auto; }
-        #toolbox .button-row { gap: 6px; }
+        #toolbox label[for="gpx-input"] {
+          padding: 8px 10px;
+          border-radius: 10px;
+        }
+        #toolbox-more {
+          margin-top: 4px;
+        }
+        #toolbox-more > summary {
+          height: 16px;
+          border-radius: 6px;
+        }
+        #toolbox-more > summary svg {
+          width: 10px;
+          height: 10px;
+        }
+        .toolbox-more-content {
+          margin-top: 8px;
+          gap: 8px;
+        }
+        #toolbox-more[open] {
+          max-height: 46vh;
+          overflow: auto;
+        }
+        #toolbox .button-row {
+          gap: 6px;
+        }
       }
-      #toolbox button svg { width: 16px; height: 16px; stroke: #e5e7eb; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; fill: none; display: block; margin: 0 auto; }
+      #toolbox button svg {
+        width: 16px;
+        height: 16px;
+        stroke: #e5e7eb;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+        display: block;
+        margin: 0 auto;
+      }
+
+      /* Save modal – match toolbox styling */
+      #save-modal {
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.65), rgba(20, 20, 30, 0.35));
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        overflow: hidden; /* clip content to rounded corners */
+      }
+      #save-modal::backdrop {
+        background: rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(10px);
+      }
+      #save-modal form {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 12px;
+        min-width: 0;
+        box-sizing: border-box;
+        background: transparent; /* use dialog background */
+        border: 0;
+        box-shadow: none;
+        margin: 0 auto; /* center inside dialog and keep side padding symmetric */
+        color: #e5e7eb;
+      }
+      #save-modal input[type="text"] {
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
+        color: #e5e7eb;
+        padding: 6px 8px;
+        outline: none;
+        min-width: 0;
+        width: 180px;
+        max-width: 100%;
+        box-sizing: border-box;
+        -webkit-appearance: none;
+      }
+      #save-modal button {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: #e5e7eb;
+        font-weight: 600;
+        font-size: 11px; /* match toolbox */
+        letter-spacing: 0.01em;
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        cursor: pointer;
+        transition: background 150ms ease, border-color 150ms ease;
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+      }
+      #save-modal button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      /* Make disabled buttons obviously disabled (modal/toolbox) */
+      #save-modal button:disabled,
+      #toolbox button:disabled {
+        opacity: 0.35;
+        filter: grayscale(40%);
+        cursor: not-allowed;
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.12);
+        box-shadow: none;
+      }
+      /* Keep undo/redo visible even when disabled */
+      #floating-actions .buttons-undo-redo button:disabled {
+        opacity: 0.9;
+        filter: none;
+        cursor: not-allowed;
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.72), rgba(20, 20, 30, 0.52));
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+      #save-modal button:disabled:hover {
+        background: rgba(255, 255, 255, 0.03);
+        border-color: rgba(255, 255, 255, 0.12);
+      }
+
+      /* Import modal – match save modal styling */
+      #import-modal {
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.65), rgba(20, 20, 30, 0.35));
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+      #import-modal::backdrop {
+        background: rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(10px);
+      }
+      #import-modal form {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 12px;
+        min-width: 0;
+        width: 100%;
+        box-sizing: border-box;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+        margin: 0 auto;
+        color: #e5e7eb;
+      }
+      #import-modal button {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: #e5e7eb;
+        font-weight: 600;
+        font-size: 11px; /* match toolbox */
+        letter-spacing: 0.01em;
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        cursor: pointer;
+        transition: background 150ms ease, border-color 150ms ease;
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+      }
+      #import-modal button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      #import-modal input[type="file"] { display: none; }
+      /* Style the label trigger like a button */
+      #import-modal label[for="gpx-input"] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: #e5e7eb;
+        font-weight: 600;
+        font-size: 11px; /* match button text size */
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        cursor: pointer;
+        transition: background 150ms ease, border-color 150ms ease;
+        box-sizing: border-box;
+      }
+      #import-modal label[for="gpx-input"]:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      #import-modal label[for="gpx-input"].dropping {
+        background: rgba(255, 255, 255, 0.14);
+        border-color: rgba(255, 255, 255, 0.28);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      }
+      /* Success modal – consistent with other modals */
+      #save-to-google-success-modal {
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 14px;
+        background: linear-gradient(135deg, rgba(20, 20, 30, 0.65), rgba(20, 20, 30, 0.35));
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+        color: #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-width: 92vw;
+        overflow: hidden;
+      }
+      #save-to-google-success-modal::backdrop {
+        background: rgba(0, 0, 0, 0.28);
+        backdrop-filter: blur(10px);
+      }
+      #save-to-google-success-modal p { margin: 0; }
+      #save-to-google-success-modal #share-link {
+        display: block;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.06);
+        color: #e5e7eb;
+        padding: 6px 8px;
+        box-sizing: border-box;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+      #save-to-google-success-modal .share-row {
+        display: flex;
+        align-items: stretch;
+        gap: 8px;
+      }
+      #save-to-google-success-modal .share-row #share-link {
+        flex: 1 1 auto;
+      }
+      #save-to-google-success-modal button {
+        appearance: none;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 8px;
+        padding: 6px 10px;
+        color: #e5e7eb;
+        font-weight: 600;
+        font-size: 11px;
+        letter-spacing: 0.01em;
+        background: rgba(255, 255, 255, 0.06);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+        cursor: pointer;
+        transition: background 150ms ease, border-color 150ms ease;
+        box-sizing: border-box;
+        max-width: 100%;
+        min-width: 0;
+      }
+      #save-to-google-success-modal .icon-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+        width: 36px;
+        min-width: 36px;
+        aspect-ratio: 1/1;
+      }
+      #save-to-google-success-modal .icon-btn svg {
+        width: 16px;
+        height: 16px;
+        stroke: #e5e7eb;
+        stroke-width: 2;
+        fill: none;
+      }
+      #save-to-google-success-modal button:hover {
+        background: rgba(255, 255, 255, 0.1);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+      @media (max-width: 480px) {
+        #save-to-google-success-modal { width: calc(100vw - 24px); }
+        #save-to-google-success-modal .share-row { flex-direction: row; }
+      }
+      @media (max-width: 480px) {
+        #import-modal { width: calc(100vw - 24px); }
+        #import-modal form { flex-direction: column; padding: 12px; }
+        #import-modal button, #import-modal label[for="gpx-input"] { width: 100%; }
+      }
+      @media (max-width: 480px) {
+        #save-modal {
+          width: calc(100vw - 24px);
+        }
+        #save-modal form {
+          flex-direction: column;
+          min-width: 0;
+          width: 100%;
+          padding: 12px;
+        }
+        #save-modal button,
+        #save-modal input[type="text"] {
+          display: block;
+          width: 100%;
+        }
+      }
     </style>
     <script type="module" src="./main.js"></script>
   </head>
   <body>
     <div id="app">
-      <div id="toolbox" style="z-index: 1000;">
+      <div id="toolbox" style="z-index: 1000">
         <div>Elevation: <span id="elevation-value"></span></div>
         <div>Longitude: <span id="pointer-lng"></span></div>
         <div>Latitude: <span id="pointer-lat"></span></div>
@@ -328,7 +705,7 @@
         <details id="toolbox-more">
           <summary aria-label="More tools">
             <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 9l6 6 6-6"/>
+              <path d="M6 9l6 6 6-6" />
             </svg>
           </summary>
           <div class="toolbox-more-content">
@@ -369,19 +746,17 @@
                 <option value="IMPERIAL">Imperial</option>
               </select>
             </div>
-            <div class="button-row" style="align-items:center;">
-              <input type="file" id="gpx-input" name="gpx-input" accept="application/gpx+xml" />
-              <label for="gpx-input" id="gpx-label">Upload GPX</label>
+            <div class="button-row" style="align-items: center">
+              <button id="delete-route">Clear Route</button>
             </div>
-            <div class="button-row" style="align-items:center;">
-              <button id="delete-route">Delete Route</button>
-            </div>
-            <div class="button-row" style="align-items:center;">
+            <div class="button-row" style="align-items: center">
               <button id="reverse-route">Reverse Route</button>
             </div>
-            <div style="display:flex; gap:8px;">
-              <input name="file-name-input" type="text" id="file-name-input" placeholder="File Name"/>
-              <button id="save-file">Save</button>
+            <div class="button-row" style="align-items: center">
+              <button id="import-modal-open">Import</button>
+            </div>
+            <div class="button-row" style="align-items: center">
+              <button id="open-save-modal">Save</button>
             </div>
           </div>
         </details>
@@ -395,44 +770,93 @@
           <img src="./street-view.svg" alt="Street View" width="24" height="24" />
         </div>
       </div>
-      <iframe id="streetview-preview" style="position: fixed; bottom: 0; left: 0; width: 200px; height: 200px; z-index: 1000; background-color: white; display: none; border: none; border-radius: 10px;"></iframe>
+      <iframe
+        id="streetview-preview"
+        style="
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 200px;
+          height: 200px;
+          z-index: 1000;
+          background-color: white;
+          display: none;
+          border: none;
+          border-radius: 10px;
+        "
+      ></iframe>
+      <dialog id="save-modal" closedby="any">
+        <form style="display: flex" method="dialog">
+          <input name="file-name-input" type="text" id="file-name-input" placeholder="File Name" />
+          <button id="save-file" autofocus>Save To File</button>
+          <button id="save-file-google">Save To Google</button>
+          <button>Cancel</button>
+        </form>
+      </dialog>
+      <dialog id="import-modal" closedby="any">
+        <form style="display: flex" method="dialog">
+          <input type="file" id="gpx-input" name="gpx-input" accept="application/gpx+xml" />
+          <label for="gpx-input" id="gpx-label">Import File</label>
+          <button id="google-docs-open">Import From Google</button>
+          <button>Cancel</button>
+        </form>
+      </dialog>
+      <dialog id="save-to-google-success-modal" closedby="any">
+        <p>File saved to Google</p>
+        <p>Share this route with others:</p>
+        <div class="share-row">
+          <span id="share-link"></span>
+          <button id="copy-share-link" class="icon-btn" title="Copy link" aria-label="Copy link">
+            <svg viewBox="0 0 24 24"><path d="M16 8V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h4"/><path d="M8 16v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-4"/></svg>
+          </button>
+        </div>
+        <form method="dialog">
+          <button>OK</button>
+        </form>
+      </dialog>
       <div id="map"></div>
     </div>
     <script>
-      (function(){
-        const input = document.getElementById('gpx-input');
-        const label = document.getElementById('gpx-label');
+      (function () {
+        const input = document.getElementById("gpx-input");
+        const label = document.getElementById("gpx-label");
         if (!input || !label) return;
-        const prevent = (e) => { e.preventDefault(); e.stopPropagation(); };
-        ['dragenter','dragover','dragleave','drop'].forEach(ev => {
+        const prevent = (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+        };
+        ["dragenter", "dragover", "dragleave", "drop"].forEach((ev) => {
           label.addEventListener(ev, prevent);
         });
-        ['dragenter','dragover'].forEach(ev => {
-          label.addEventListener(ev, () => label.classList.add('dropping'));
+        ["dragenter", "dragover"].forEach((ev) => {
+          label.addEventListener(ev, () => label.classList.add("dropping"));
         });
-        ['dragleave','drop'].forEach(ev => {
-          label.addEventListener(ev, () => label.classList.remove('dropping'));
+        ["dragleave", "drop"].forEach((ev) => {
+          label.addEventListener(ev, () => label.classList.remove("dropping"));
         });
-        label.addEventListener('drop', (e) => {
+        label.addEventListener("drop", (e) => {
           const dt = e.dataTransfer;
           if (!dt || !dt.files || !dt.files.length) return;
           input.files = dt.files; // triggers change listeners already set up in JS
-          input.dispatchEvent(new Event('change', { bubbles: true }));
+          input.dispatchEvent(new Event("change", { bubbles: true }));
         });
       })();
 
-      (function(){
-        const details = document.getElementById('toolbox-more');
+      (function () {
+        const details = document.getElementById("toolbox-more");
         if (!details) return;
-        const mq = window.matchMedia('(max-width: 480px)');
-        const apply = () => { details.open = !mq.matches; };
+        const mq = window.matchMedia("(max-width: 480px)");
+        const apply = () => {
+          details.open = !mq.matches;
+        };
         apply();
         if (mq.addEventListener) {
-          mq.addEventListener('change', apply);
+          mq.addEventListener("change", apply);
         } else if (mq.addListener) {
           mq.addListener(apply);
         }
       })();
     </script>
+    <script></script>
   </body>
 </html>

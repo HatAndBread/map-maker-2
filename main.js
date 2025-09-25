@@ -10,10 +10,30 @@ import { Undo } from "./undo.js";
 import { ControlPointManager } from "./control-point.js";
 import { haptic } from "./haptic.js";
 import { showSuccessPulse } from "./visuals.js";
+import { authenticateAndCreateGoogleDoc, pickAndOpenGpx, getFileById } from "./google.js";
 
 export const undoManager = new Undo();
 const params = new URLSearchParams(window.location.search);
-
+const fileId = params.get("id");
+if (fileId) {
+  const handleFailure = (e) => {
+    console.error(e);
+    params.delete("id");
+    window.location.search = params.toString();
+  };
+  getFileById(fileId)
+    .then((text) => {
+      try {
+        const routes = parseGpx(text);
+        state.routes = routes;
+      } catch (e) {
+        handleFailure(e);
+      }
+    })
+    .catch((e) => {
+      handleFailure(e);
+    });
+}
 const setRouteDistanceText = () => {
   const route = state.routes[state.currentEditingRoute];
   const distance = calculations.routeDistance(route);
@@ -83,6 +103,11 @@ export const state = createState(
       } else if (uiElements.saveFileButton) {
         uiElements.saveFileButton.disabled = true;
       }
+      if (value && uiElements.saveFileGoogleButton) {
+        uiElements.saveFileGoogleButton.disabled = false;
+      } else if (uiElements.saveFileGoogleButton) {
+        uiElements.saveFileGoogleButton.disabled = true;
+      }
     },
     measurementSystem: (value) => {
       if (!uiElements.measurementSystem) return;
@@ -93,12 +118,17 @@ export const state = createState(
       updateElevationText(state.elevation);
     },
     routes: (value) => {
+      if (!value) {
+        console.warn("Tried to set routes to a falsey value");
+        return;
+      }
       setRoutesData(value);
       controlPointManager.routes = value;
       controlPointManager.update();
       setRouteDistanceText();
       setRouteDistance3dText();
       storage.latestRoutes = value;
+      uiElements.importModal?.close();
     },
   }
 );
@@ -153,7 +183,6 @@ if (uiElements.straightLine) {
   };
 }
 if (uiElements.mapboxProfile) {
-  console.log({ mapboxProfile: uiElements.mapboxProfile });
   uiElements.mapboxProfile.value = MAPBOX_PROFILES[0];
   uiElements.mapboxProfile.onchange = () => {
     if (!uiElements.mapboxProfile) return;
@@ -177,12 +206,14 @@ if (uiElements.saveFileButton) {
 if (uiElements.fileNameInput) {
   uiElements.fileNameInput.value = "";
   uiElements.fileNameInput.oninput = () => {
-    if (!uiElements.fileNameInput) return;
+    if (!uiElements.fileNameInput || !uiElements.saveFileButton || !uiElements.saveFileGoogleButton) return;
     state.filename = uiElements.fileNameInput.value;
-    if (!state.filename && uiElements.saveFileButton) {
+    if (!state.filename) {
       uiElements.saveFileButton.disabled = true;
-    } else if (uiElements.saveFileButton) {
+      uiElements.saveFileGoogleButton.disabled = true;
+    } else {
       uiElements.saveFileButton.disabled = false;
+      uiElements.saveFileGoogleButton.disabled = false;
     }
   };
 }
@@ -250,6 +281,36 @@ if (uiElements.reverseRouteButton) {
     undoManager.add({ undo, redo });
   };
 }
+if (uiElements.saveFileGoogleButton) {
+  uiElements.saveFileGoogleButton.disabled = true;
+  uiElements.saveFileGoogleButton.addEventListener("click", () => {
+    authenticateAndCreateGoogleDoc();
+  });
+}
+if (uiElements.googleDocsOpenButton) {
+  uiElements.googleDocsOpenButton.addEventListener("click", () => {
+    pickAndOpenGpx();
+  });
+}
+
+if (uiElements.openSaveModalButton) {
+  uiElements.openSaveModalButton.addEventListener("click", () => {
+    if (!uiElements.saveModal) return;
+    uiElements.saveModal.showModal();
+  });
+}
+if (uiElements.importModalOpenButton) {
+  uiElements.importModalOpenButton.addEventListener("click", () => {
+    if (!uiElements.importModal) return;
+    uiElements.importModal.showModal();
+  });
+}
+if (uiElements.copyShareLinkButton) {
+  uiElements.copyShareLinkButton.addEventListener("click", () => {
+    if (!uiElements.shareLink || !uiElements.shareLink.textContent) return;
+    navigator.clipboard.writeText(uiElements.shareLink.textContent);
+  });
+}
 
 ["mousemove", "touchmove"].forEach((event) => {
   map.on(event, (e) => {
@@ -283,7 +344,6 @@ const handleMouseDown = (e) => {
       clientX = e.touches[0].clientX;
       clientY = e.touches[0].clientY;
     }
-    console.log({ clientX, clientY });
     const lngLat = map.unproject([clientX, clientY]);
     const px = lngLat.lng;
     const py = lngLat.lat;
