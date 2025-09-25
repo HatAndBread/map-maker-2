@@ -9,6 +9,67 @@ import { uiElements } from "./ui-elements.js";
 let pickerAccessToken = null;
 let driveAccessToken = null;
 
+// Open the success dialog robustly on mobile after OAuth flows
+function openSaveToGoogleSuccessModalSafely(shareUrl) {
+  const dialog = uiElements.saveToGoogleSuccessModal;
+  if (!dialog) return;
+
+  // Ensure other dialogs are closed to avoid conflicts
+  uiElements.saveModal?.close();
+  uiElements.importModal?.close();
+
+  const attemptOpen = () => {
+    try {
+      if (typeof HTMLDialogElement === "undefined" || !("showModal" in dialog)) {
+        dialog.show?.();
+      } else {
+        dialog.showModal();
+      }
+    } catch (e) {
+      // Fallbacks if showModal isn't allowed in current state
+      if (dialog.show) {
+        try {
+          dialog.show();
+          return;
+        } catch {}
+      }
+      alert(`File saved. Share: ${shareUrl}`);
+    }
+  };
+
+  const openWhenActive = () => {
+    // Yield to next frame to let focus/activation settle on mobile Safari
+    requestAnimationFrame(() => setTimeout(attemptOpen, 0));
+  };
+
+  if (document.visibilityState !== "visible" || !document.hasFocus()) {
+    let opened = false;
+    const tryOpen = () => {
+      if (opened) return;
+      if (document.visibilityState === "visible" && document.hasFocus()) {
+        opened = true;
+        window.removeEventListener("focus", tryOpen);
+        document.removeEventListener("visibilitychange", tryOpen);
+        openWhenActive();
+      }
+    };
+    window.addEventListener("focus", tryOpen, { once: true });
+    document.addEventListener("visibilitychange", tryOpen, { once: true });
+    // Last-resort timeout in case focus event is swallowed
+    setTimeout(() => {
+      if (!opened && document.visibilityState === "visible") {
+        opened = true;
+        window.removeEventListener("focus", tryOpen);
+        document.removeEventListener("visibilitychange", tryOpen);
+        openWhenActive();
+      }
+    }, 1500);
+    return;
+  }
+
+  openWhenActive();
+}
+
 const authorize = (cb, isPicker) => {
   const token = isPicker ? pickerAccessToken : driveAccessToken;
   const scope = isPicker
@@ -62,27 +123,9 @@ async function createGoogleDoc() {
     } catch (e) {
       console.warn("makePublic failed", e);
     }
-    const open = () => {
-      if (uiElements.saveToGoogleSuccessModal && uiElements.shareLink) {
-        uiElements.saveToGoogleSuccessModal.showModal();
-        uiElements.shareLink.textContent = `${window.location.origin}?id=${data.id}`;
-      }
-    };
-
-    if (document.visibilityState !== "visible" || !document.hasFocus()) {
-      const tryOpen = () => {
-        if (document.visibilityState === "visible" && document.hasFocus()) {
-          window.removeEventListener("focus", tryOpen);
-          document.removeEventListener("visibilitychange", tryOpen);
-          open();
-        }
-      };
-      window.addEventListener("focus", tryOpen, { once: true });
-      document.addEventListener("visibilitychange", tryOpen);
-      return;
-    } else {
-      open();
-    }
+    const shareUrl = `${window.location.origin}?id=${data.id}`;
+    if (uiElements.shareLink) uiElements.shareLink.textContent = shareUrl;
+    openSaveToGoogleSuccessModalSafely(shareUrl);
   } catch (err) {
     driveAccessToken = null;
     console.error(err);

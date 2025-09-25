@@ -283,7 +283,11 @@ if (uiElements.reverseRouteButton) {
 }
 if (uiElements.saveFileGoogleButton) {
   uiElements.saveFileGoogleButton.disabled = true;
-  uiElements.saveFileGoogleButton.addEventListener("click", () => {
+  uiElements.saveFileGoogleButton.addEventListener("click", (e) => {
+    // Prevent the dialog form from submitting or closing prematurely
+    e.preventDefault?.();
+    e.stopPropagation?.();
+    uiElements.saveModal?.close();
     authenticateAndCreateGoogleDoc();
   });
 }

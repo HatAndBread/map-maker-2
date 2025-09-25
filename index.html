@@ -10,6 +10,8 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
+      /* Ensure dialogs never render unless explicitly opened */
+      dialog:not([open]) { display: none !important; }
       body {
         margin: 0;
         padding: 0;
@@ -788,8 +790,8 @@
       <dialog id="save-modal" closedby="any">
         <form style="display: flex" method="dialog">
           <input name="file-name-input" type="text" id="file-name-input" placeholder="File Name" />
-          <button id="save-file" autofocus>Save To File</button>
-          <button id="save-file-google">Save To Google</button>
+          <button id="save-file">Save To File</button>
+          <button id="save-file-google" type="button">Save To Google</button>
           <button>Cancel</button>
         </form>
       </dialog>
