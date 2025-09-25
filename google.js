@@ -62,9 +62,26 @@ async function createGoogleDoc() {
     } catch (e) {
       console.warn("makePublic failed", e);
     }
-    if (uiElements.saveToGoogleSuccessModal && uiElements.shareLink) {
-      uiElements.saveToGoogleSuccessModal.showModal();
-      uiElements.shareLink.textContent = `${window.location.origin}?id=${data.id}`;
+    const open = () => {
+      if (uiElements.saveToGoogleSuccessModal && uiElements.shareLink) {
+        uiElements.saveToGoogleSuccessModal.showModal();
+        uiElements.shareLink.textContent = `${window.location.origin}?id=${data.id}`;
+      }
+    };
+
+    if (document.visibilityState !== "visible" || !document.hasFocus()) {
+      const tryOpen = () => {
+        if (document.visibilityState === "visible" && document.hasFocus()) {
+          window.removeEventListener("focus", tryOpen);
+          document.removeEventListener("visibilitychange", tryOpen);
+          open();
+        }
+      };
+      window.addEventListener("focus", tryOpen, { once: true });
+      document.addEventListener("visibilitychange", tryOpen);
+      return;
+    } else {
+      open();
     }
   } catch (err) {
     driveAccessToken = null;
