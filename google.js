@@ -21,19 +21,21 @@ function openSaveToGoogleSuccessModalSafely(shareUrl) {
   const attemptOpen = () => {
     try {
       if (typeof HTMLDialogElement === "undefined" || !("showModal" in dialog)) {
-        dialog.show?.();
+        if (typeof dialog.show === "function") {
+          dialog.show();
+        } else {
+          alert(`File saved. Share: ${shareUrl}`);
+        }
       } else {
         dialog.showModal();
       }
     } catch (e) {
-      // Fallbacks if showModal isn't allowed in current state
-      if (dialog.show) {
-        try {
-          dialog.show();
-          return;
-        } catch {}
+      // Retry non-modal, else alert as minimal fallback
+      try {
+        dialog.show?.();
+      } catch {
+        alert(`File saved. Share: ${shareUrl}`);
       }
-      alert(`File saved. Share: ${shareUrl}`);
     }
   };
 
