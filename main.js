@@ -373,6 +373,21 @@ if (uiElements.elevationProfile) {
   } else {
     uiElements.elevationProfile.style.display = "none";
   }
+  // Prevent browser navigation gestures on mobile while interacting
+  uiElements.elevationProfile.addEventListener(
+    "touchstart",
+    (e) => {
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+  uiElements.elevationProfile.addEventListener(
+    "touchmove",
+    (e) => {
+      e.preventDefault();
+    },
+    { passive: false }
+  );
   uiElements.elevationProfile.addEventListener("pointermove", (e) => {
     e.stopPropagation();
     e.preventDefault();
