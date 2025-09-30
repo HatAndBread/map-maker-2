@@ -1,4 +1,4 @@
-import { map, resolveStyle } from "./create-map.js";
+import { map, resolveStyle, setElevationMarker, unsetElevationMarker } from "./create-map.js";
 import { uiElements } from "./ui-elements.js";
 import { createState } from "./create-state.js";
 import { storage } from "./storage.js";
@@ -11,6 +11,7 @@ import { ControlPointManager } from "./control-point.js";
 import { haptic } from "./haptic.js";
 import { showSuccessPulse } from "./visuals.js";
 import { authenticateAndCreateGoogleDoc, pickAndOpenGpx, getFileById } from "./google.js";
+import generateElevationProfileForRoute from "./elevation_profile.js";
 
 export const undoManager = new Undo();
 const params = new URLSearchParams(window.location.search);
@@ -75,13 +76,15 @@ export const state = createState(
     elevation: null,
     pointerLng: null,
     pointerLat: null,
-    routes: storage.latestRoutes,
+    routes: storage.latestRoutes || [[]],
     currentEditingRoute: 0,
     straightLine: false,
     mapboxProfile: MAPBOX_PROFILES[0],
     filename: null,
     measurementSystem: storage.measurementSystem,
     isDisplayOnly: params.get("displayOnly") === "true",
+    isElevationProfileVisible: storage.isElevationProfileVisible || false,
+    elevationProfile: null,
   },
   {
     elevation: (value) => {
@@ -116,6 +119,33 @@ export const state = createState(
       setRouteDistanceText();
       setRouteDistance3dText();
       updateElevationText(state.elevation);
+      forceMapUpdate();
+    },
+    elevationProfile: (value) => {
+      if (!uiElements.elevationProfile) return;
+      uiElements.elevationProfile.innerHTML = "";
+      const maxEle = value.reduce((m, p) => (p.ele > m ? p.ele : m), 0);
+      const scale = maxEle > 0 ? 100 / maxEle : 1; // fit ~100px height
+      uiElements.elevationProfile.innerHTML = value
+        .map((point) => {
+          const displayEle =
+            storage.measurementSystem === "METRIC"
+              ? `${point.ele}m`
+              : `${calculations.metersToFeet(point.ele).toFixed(2)}ft`;
+          const displayDistance =
+            storage.measurementSystem === "METRIC"
+              ? `${calculations.metersToKilometers(point.distance).toFixed(2)}km`
+              : `${calculations.metersToMiles(point.distance).toFixed(2)}mi`;
+          return `<div class="elev-bar" style="height:${Math.max(
+            1,
+            Math.round(point.ele * scale)
+          )}px;background-color:#e5e7eb;width:1px" data-elevation="${
+            point.ele
+          }" data-tooltip="Ele: ${displayEle} Distance: ${displayDistance}" data-lon="${point.lon}" data-lat="${
+            point.lat
+          }" data-display-elevation="${displayEle}" data-display-distance="${displayDistance}"></div>`;
+        })
+        .join("");
     },
     routes: (value) => {
       if (!value) {
@@ -129,6 +159,19 @@ export const state = createState(
       setRouteDistance3dText();
       storage.latestRoutes = value;
       uiElements.importModal?.close();
+      if (state.isElevationProfileVisible) {
+        state.elevationProfile = generateElevationProfileForRoute(value[state.currentEditingRoute]);
+      }
+    },
+    isElevationProfileVisible: (value) => {
+      if (!uiElements.toggleElevationProfileButton) return;
+      storage.isElevationProfileVisible = value;
+      uiElements.toggleElevationProfileButton.textContent = value ? "Hide Elevation Profile" : "Show Elevation Profile";
+      if (!uiElements.elevationProfile) return;
+      uiElements.elevationProfile.style.display = value ? "" : "none";
+      if (value) {
+        state.elevationProfile = generateElevationProfileForRoute(state.routes[state.currentEditingRoute]);
+      }
     },
   }
 );
@@ -313,6 +356,48 @@ if (uiElements.copyShareLinkButton) {
   uiElements.copyShareLinkButton.addEventListener("click", () => {
     if (!uiElements.shareLink || !uiElements.shareLink.textContent) return;
     navigator.clipboard.writeText(uiElements.shareLink.textContent);
+  });
+}
+if (uiElements.toggleElevationProfileButton) {
+  uiElements.toggleElevationProfileButton.textContent = storage.isElevationProfileVisible
+    ? "Hide Elevation Profile"
+    : "Show Elevation Profile";
+  uiElements.toggleElevationProfileButton.addEventListener("click", () => {
+    state.isElevationProfileVisible = !state.isElevationProfileVisible;
+  });
+}
+
+if (uiElements.elevationProfile) {
+  if (state.isElevationProfileVisible) {
+    uiElements.elevationProfile.style.display = "";
+  } else {
+    uiElements.elevationProfile.style.display = "none";
+  }
+  uiElements.elevationProfile.addEventListener("pointermove", (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    // @ts-ignore
+    const dataset = e.relatedTarget?.dataset || {};
+    const { lon, lat, displayElevation, displayDistance } = dataset;
+    if (lon && lat && displayElevation && displayDistance) {
+      if (!lon || !lat) return;
+      map.setCenter([lon, lat]);
+      setElevationMarker(lon, lat, displayElevation, displayDistance);
+    } else {
+      for (let i = window.innerHeight; i > 0; i--) {
+        const element = document.elementFromPoint(e.clientX, i);
+        if (element?.classList.contains("elev-bar")) {
+          // @ts-ignore
+          const { lon, lat, displayElevation, displayDistance } = element.dataset;
+          map.setCenter([lon, lat]);
+          setElevationMarker(lon, lat, displayElevation, displayDistance);
+          break;
+        }
+      }
+    }
+  });
+  uiElements.elevationProfile.addEventListener("pointerout", () => {
+    unsetElevationMarker();
   });
 }
 
@@ -532,9 +617,18 @@ map.on("click", (e) => {
     undoManager.add({ undo, redo });
   }
   haptic();
-  console.log(state.routes);
 });
 
 map.on("mouseup", () => {
   clearLongMouseTimer();
+});
+
+let resizeTimeout;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimeout);
+  resizeTimeout = setTimeout(() => {
+    if (state.isElevationProfileVisible) {
+      state.elevationProfile = generateElevationProfileForRoute(state.routes[state.currentEditingRoute]);
+    }
+  }, 200);
 });

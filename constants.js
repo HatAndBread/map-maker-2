@@ -4,7 +4,7 @@ export default {
     tracks: "#8B4513",
   },
   DB_NAME: "mapmaker-db",
-  DB_VERSION: 2,
+  DB_VERSION: 3,
   STORE_NAME: "state",
   START_LNG_LAT: [138.7274, 35.3606],
   DEFAULT_MAP_STYLE: "mapbox://styles/mapbox/streets-v11",

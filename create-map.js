@@ -5,6 +5,7 @@ import constants from "./constants.js";
 import publicKeys from "./public-keys.js";
 import { haptic } from "./haptic.js";
 import { forceMapUpdate, state } from "./main.js";
+import calculations from "./calcuations.js";
 
 mapboxgl.accessToken = publicKeys.mapbox;
 // Provide a minimal OSM raster style when the special option is selected
@@ -36,6 +37,23 @@ export const map = new mapboxgl.Map({
   style: resolveStyle(uiElements.mapStyle?.value),
   center: storage.latestLngLat,
   zoom: 10,
+});
+
+// elevation queries off screen don't always work
+// so keep an extra map off screen for elevation queries
+// keep zoomed out so we can see hundred of km at a time
+export const elevationMap = new mapboxgl.Map({
+  container: "elevation-map",
+  style: resolveStyle(uiElements.mapStyle?.value),
+  center: storage.latestLngLat,
+  zoom: 7,
+});
+elevationMap.on("load", () => {
+  elevationMap.addSource("mapbox-dem", {
+    type: "raster-dem",
+    url: "mapbox://mapbox.mapbox-terrain-dem-v1",
+  });
+  elevationMap.setTerrain({ source: "mapbox-dem" });
 });
 
 const addFeatureCollection = (id, color) => {
@@ -237,7 +255,8 @@ const handleLoad = () => {
 
 map.on("load", () => {
   handleLoad();
-  const firstPoint = state.routes[0]?.[0];
+  const firstPoint = state.routes?.[0]?.[0];
+  console.log({ firstPoint });
   if (firstPoint) {
     map.setCenter([firstPoint.lon, firstPoint.lat]);
     map.zoomTo(15);
@@ -325,7 +344,6 @@ export const setRoutesData = (routes) => {
       },
     })),
   };
-  console.log(routes);
   const src = map.getSource("routes");
   if (src) {
     src.setData(fc);
@@ -351,6 +369,7 @@ const boundHasAlreadyBeenQueried = (bounds) => {
 
 map.on("moveend", () => {
   const center = map.getCenter();
+  elevationMap.setCenter(center);
   storage.latestLngLat = [center.lng, center.lat];
   const zoom = map.getZoom();
   if (zoom < constants.TRAILS_MIN_ZOOM) return;
@@ -592,4 +611,68 @@ export const setupStreetViewDrag = () => {
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", end);
   window.addEventListener("pointercancel", end);
+};
+
+let elevationMarker = null;
+export const setElevationMarker = (lng, lat, displayElevation, displayDistance) => {
+  unsetElevationMarker();
+  const el = document.createElement("div");
+  el.style.position = "relative";
+  el.style.transform = "translate(-50%, -100%)";
+  // Bubble
+  const bubble = document.createElement("div");
+  bubble.style.background = "rgba(20,20,30,0.92)";
+  bubble.style.color = "#e5e7eb";
+  bubble.style.border = "0";
+  bubble.style.borderRadius = "10px";
+  bubble.style.padding = "6px 8px";
+  bubble.style.fontSize = "11px";
+  bubble.style.lineHeight = "1.25";
+  bubble.style.whiteSpace = "nowrap";
+  bubble.style.boxShadow = "0 12px 24px rgba(0,0,0,0.35)";
+  bubble.style.transform = "translate(-50%, 0)";
+  bubble.style.position = "absolute";
+  bubble.style.left = "50%";
+  bubble.style.bottom = "18px";
+  bubble.textContent = `Ele: ${displayElevation}  •  Dist: ${displayDistance}`;
+  // Arrow
+  const arrow = document.createElement("div");
+  arrow.style.position = "absolute";
+  arrow.style.left = "50%";
+  arrow.style.bottom = "14px";
+  arrow.style.width = "12px";
+  arrow.style.height = "8px";
+  arrow.style.transform = "translateX(-50%)";
+  arrow.style.clipPath = "polygon(0% 0%, 100% 0%, 50% 100%)";
+  arrow.style.background = "rgba(20,20,30,0.92)";
+  arrow.style.borderLeft = "0";
+  arrow.style.borderTop = "0";
+  arrow.style.boxShadow = "none";
+  // Dot
+  const dot = document.createElement("div");
+  dot.style.position = "absolute";
+  dot.style.left = "50%";
+  dot.style.top = "100%";
+  dot.style.width = "16px";
+  dot.style.height = "16px";
+  dot.style.transform = "translate(-50%, -50%)";
+  dot.style.borderRadius = "50%";
+  dot.style.background =
+    "radial-gradient(circle at 50% 50%, rgba(147,197,253,1) 0%, rgba(59,130,246,1) 55%, rgba(59,130,246,0.1) 100%)";
+  dot.style.border = "0";
+  dot.style.outline = "none";
+  dot.style.boxShadow = "0 14px 26px rgba(0, 0, 0, 0.35), 0 0 0 4px rgba(20,20,30,0.6)";
+  el.appendChild(bubble);
+  el.appendChild(arrow);
+  el.appendChild(dot);
+  elevationMarker = new mapboxgl.Marker(el);
+  elevationMarker.setLngLat([lng, lat]);
+  elevationMarker.addTo(map);
+};
+
+export const unsetElevationMarker = () => {
+  if (elevationMarker) {
+    elevationMarker.remove();
+    elevationMarker = null;
+  }
 };

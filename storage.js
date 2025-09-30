@@ -24,6 +24,7 @@ const getDefaultState = () => {
     mapStyle: constants.DEFAULT_MAP_STYLE,
     latestRoutes: [[]],
     savedGoogleDocs: [],
+    isElevationProfileVisible: false,
   };
 };
 

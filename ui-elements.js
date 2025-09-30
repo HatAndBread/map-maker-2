@@ -88,6 +88,12 @@ export const uiElements = {
   get shareLink() {
     return /** @type {HTMLSpanElement | null} */ (document.getElementById("share-link"));
   },
+  get toggleElevationProfileButton() {
+    return /** @type {HTMLButtonElement | null} */ (document.getElementById("toggle-elevation-profile"));
+  },
+  get elevationProfile() {
+    return /** @type {HTMLDivElement | null} */ (document.getElementById("elevation-profile"));
+  },
 };
 
 // set the initial values to the storage values

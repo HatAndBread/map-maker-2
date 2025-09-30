@@ -29,11 +29,29 @@
         padding: 0;
         font-family: Arial, sans-serif;
       }
+      .hidden {
+        display: none;
+      }
       #map {
         position: absolute;
         top: 0;
         bottom: 0;
         width: 100%;
+      }
+      /* Elevation profile overlay */
+      #elevation-profile {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: calc(0px + env(safe-area-inset-bottom));
+        height: 120px;
+        z-index: 1001;
+        display: flex;
+        align-items: flex-end;
+        gap: 0;
+        padding: 4px 0;
+        overflow: visible;
+        background: linear-gradient(to top, rgba(0,0,0,0.25), rgba(0,0,0,0));
       }
       /* Rad toolbox styles */
       #toolbox {
@@ -153,7 +171,7 @@
         position: absolute;
         bottom: calc(16px + env(safe-area-inset-bottom));
         right: calc(16px + env(safe-area-inset-right));
-        z-index: 1000;
+        z-index: 1001;
         display: flex;
         align-items: center;
         gap: 8px;
@@ -772,6 +790,9 @@
             <div class="button-row" style="align-items: center">
               <button id="open-save-modal">Save</button>
             </div>
+            <div class="button-row" style="align-items: center">
+              <button id="toggle-elevation-profile">&nbsp;</button>
+            </div>
           </div>
         </details>
       </div>
@@ -829,6 +850,8 @@
         </form>
       </dialog>
       <div id="map"></div>
+      <div id="elevation-profile" style="background: linear-gradient(to top, rgba(20,20,30,0.42), rgba(20,20,30,0)); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);"></div>
+      <div id="elevation-map" style="display: none;"></div>
     </div>
     <script>
       (function () {

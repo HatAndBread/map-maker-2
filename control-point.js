@@ -66,7 +66,6 @@ export class ControlPointManager {
   }
 
   removeOrphanControlPoints() {
-    console.log(this.controlPoints.length, this.routes.length);
     if (this.controlPoints.length > this.routes.length) {
       for (let i = this.routes.length; i < this.controlPoints.length; i++) {
         this.controlPoints[i].forEach((controlPoint) => {
@@ -141,7 +140,6 @@ export class ControlPoint {
           this.route.splice(lastControlPointIndex + 1);
         } else if (this.isFirstInRoute()) {
           const nextControlPointIndex = this.nextControlPointIndex();
-          console.log({ nextControlPointIndex });
           this.route.splice(0, nextControlPointIndex);
         }
         forceMapUpdate();
