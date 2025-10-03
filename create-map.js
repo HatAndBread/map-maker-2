@@ -46,7 +46,7 @@ export const elevationMap = new mapboxgl.Map({
   container: "elevation-map",
   style: resolveStyle(uiElements.mapStyle?.value),
   center: storage.latestLngLat,
-  zoom: 7,
+  zoom: 8,
 });
 elevationMap.on("load", () => {
   elevationMap.addSource("mapbox-dem", {
@@ -445,6 +445,13 @@ const addIframe = (lng, lat) => {
   const iframe = document.createElement("iframe");
   const closeButton = document.createElement("button");
 
+  const handleEscape = (e) => {
+    if (e.key === "Escape") {
+      closeButton?.click();
+    }
+  };
+  document.addEventListener("keydown", handleEscape);
+
   closeButton.textContent = "Close";
   closeButton.style.position = "absolute";
   closeButton.style.top = "10px";
@@ -458,6 +465,7 @@ const addIframe = (lng, lat) => {
 
   closeButton.onclick = () => {
     container.remove();
+    document.removeEventListener("keydown", handleEscape);
   };
 
   iframe.src = `https://www.google.com/maps/embed/v1/streetview?key=${publicKeys.google}&location=${lat},${lng}`;
@@ -606,11 +614,26 @@ export const setupStreetViewDrag = () => {
     if (wasDragPanEnabled) map.dragPan.enable();
   };
 
+  const cancelDrag = () => {
+    if (wasDragPanEnabled) map.dragPan.enable();
+    dragging = false;
+    cleanupGhosts();
+    ghost = null;
+    dragStartCenter = null;
+    const preview = uiElements.streetviewPreview;
+    if (preview) preview.style.display = "none";
+  };
+
   // Pointer events only (covers mouse + touch on modern browsers)
   icon.addEventListener("pointerdown", start);
   window.addEventListener("pointermove", move);
   window.addEventListener("pointerup", end);
   window.addEventListener("pointercancel", end);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      cancelDrag();
+    }
+  });
 };
 
 let elevationMarker = null;

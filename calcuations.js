@@ -1,4 +1,4 @@
-import { elevationMap } from "./create-map.js";
+import { elevationMap, map } from "./create-map.js";
 export default {
   metersToFeet(meters) {
     return meters * 3.28084;
@@ -28,7 +28,7 @@ export default {
     return R * c; // distance in meters
   },
   elevation(lon, lat) {
-    const elevation = elevationMap.queryTerrainElevation({ lon, lat }) || 0;
+    const elevation = map.queryTerrainElevation({ lon, lat }) || elevationMap.queryTerrainElevation({ lon, lat }) || 0;
     return Number(elevation.toFixed(1));
   },
   routeDistance(route = []) {
