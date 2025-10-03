@@ -35,6 +35,12 @@ if (fileId) {
       handleFailure(e);
     });
 }
+
+export const closeToolboxIfMobile = () => {
+  if (uiElements.toolboxMore?.open && window.innerWidth <= 480) {
+    uiElements.toolboxMore.open = false;
+  }
+};
 const setRouteDistanceText = () => {
   const route = state.routes[state.currentEditingRoute];
   const distance = calculations.routeDistance(route);
@@ -180,12 +186,11 @@ export const forceMapUpdate = () => {
   state.routes = state.routes;
 };
 
-// Subtle visual cue at a lng/lat: high-contrast outward ripple (visible beneath a finger)
-
 if (uiElements.measurementSystem) {
   uiElements.measurementSystem.onchange = () => {
     if (!uiElements.measurementSystem) return;
     state.measurementSystem = uiElements.measurementSystem.value;
+    closeToolboxIfMobile();
   };
 }
 if (uiElements.mapStyle) {
@@ -193,6 +198,7 @@ if (uiElements.mapStyle) {
     if (!uiElements.mapStyle) return;
     storage.mapStyle = uiElements.mapStyle.value;
     map.setStyle(resolveStyle(uiElements.mapStyle.value));
+    closeToolboxIfMobile();
     map.once("style.load", () => {
       forceMapUpdate();
     });
@@ -211,11 +217,13 @@ if (uiElements.streetViewIcon) {
 if (uiElements.undoButton) {
   uiElements.undoButton.onclick = () => {
     undoManager.undo();
+    closeToolboxIfMobile();
   };
 }
 if (uiElements.redoButton) {
   uiElements.redoButton.onclick = () => {
     undoManager.redo();
+    closeToolboxIfMobile();
   };
 }
 if (uiElements.straightLine) {
@@ -223,6 +231,7 @@ if (uiElements.straightLine) {
   uiElements.straightLine.onchange = () => {
     if (!uiElements.straightLine) return;
     state.straightLine = uiElements.straightLine.checked;
+    closeToolboxIfMobile();
   };
 }
 if (uiElements.mapboxProfile) {
@@ -230,11 +239,13 @@ if (uiElements.mapboxProfile) {
   uiElements.mapboxProfile.onchange = () => {
     if (!uiElements.mapboxProfile) return;
     state.mapboxProfile = uiElements.mapboxProfile.value;
+    closeToolboxIfMobile();
   };
 }
 if (uiElements.saveFileButton) {
   uiElements.saveFileButton.disabled = true;
   uiElements.saveFileButton.onclick = () => {
+    closeToolboxIfMobile();
     if (!state.filename) return;
     const gpx = routeToGpx(state.routes[state.currentEditingRoute]);
     const blob = new Blob([gpx], { type: "application/gpx+xml" });
@@ -282,8 +293,10 @@ if (uiElements.gpxInput) {
             forceMapUpdate();
           }
           state.filename = file.name.split(".")[0];
+          closeToolboxIfMobile();
         } catch (e) {
           console.error(e);
+          closeToolboxIfMobile();
           alert("Error parsing GPX file");
         }
       };
@@ -308,6 +321,7 @@ if (uiElements.deleteRouteButton) {
       forceMapUpdate();
     };
     undoManager.add({ undo, redo });
+    closeToolboxIfMobile();
   };
 }
 
@@ -322,6 +336,7 @@ if (uiElements.reverseRouteButton) {
       forceMapUpdate();
     };
     undoManager.add({ undo, redo });
+    closeToolboxIfMobile();
   };
 }
 if (uiElements.saveFileGoogleButton) {
@@ -337,6 +352,7 @@ if (uiElements.saveFileGoogleButton) {
 if (uiElements.googleDocsOpenButton) {
   uiElements.googleDocsOpenButton.addEventListener("click", () => {
     pickAndOpenGpx();
+    closeToolboxIfMobile();
   });
 }
 
@@ -364,6 +380,7 @@ if (uiElements.toggleElevationProfileButton) {
     : "Show Elevation Profile";
   uiElements.toggleElevationProfileButton.addEventListener("click", () => {
     state.isElevationProfileVisible = !state.isElevationProfileVisible;
+    closeToolboxIfMobile();
   });
 }
 
@@ -389,6 +406,7 @@ if (uiElements.elevationProfile) {
     { passive: false }
   );
   uiElements.elevationProfile.addEventListener("pointermove", (e) => {
+    closeToolboxIfMobile();
     e.stopPropagation();
     e.preventDefault();
     // @ts-ignore
@@ -521,9 +539,7 @@ document.addEventListener("touchstart", (e) => {
   if (e.target !== map.getCanvas()) {
     return;
   }
-  if (uiElements.toolboxMore?.open && window.innerWidth <= 480) {
-    uiElements.toolboxMore.open = false;
-  }
+  closeToolboxIfMobile();
   handleMouseDown(e);
 });
 
