@@ -1,0 +1,7 @@
+# Robots.txt for https://hatandbread.github.io/map-maker-2/
+# Allow all well-behaved crawlers
+
+User-agent: *
+Allow: /
+
+
