@@ -58,6 +58,7 @@
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
+      html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       /* Ensure dialogs never render unless explicitly opened */
       dialog:not([open]) { display: none !important; }
       body {
@@ -97,9 +98,11 @@
         left: 16px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
-        padding: 8px 8px;
-        max-width: 170px;
+        gap: 2px;
+        padding: 4px 6px;
+        max-width: 120px;
+        width: 120px;
+        box-sizing: border-box;
         border-radius: 14px;
         background: linear-gradient(135deg, rgba(20, 20, 30, 0.65), rgba(20, 20, 30, 0.35));
         border: 1px solid rgba(255, 255, 255, 0.2);
@@ -107,11 +110,16 @@
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         color: #e5e7eb;
-        font-size: 11px;
+        font-size: 10px;
       }
+      /* Force uniform typography within toolbox across platforms */
+      #toolbox, #toolbox * { font-size: 10px; }
+      #toolbox > div { font-size: 10px; line-height: 1.2; }
+      /* Ensure readout rows use identical font size */
+      #toolbox > div { font-size: inherit; line-height: 1.2; }
       #toolbox label {
         color: #e5e7eb;
-        font-size: 10px;
+        font-size: 9px;
         letter-spacing: 0.02em;
       }
       #toolbox span {
@@ -127,6 +135,8 @@
         color: #e5e7eb;
         padding: 6px 8px;
         outline: none;
+        font-size: inherit; /* keep input/select size identical to surrounding text */
+        box-sizing: border-box;
       }
       #toolbox select,
       #toolbox input[type="text"] {
@@ -141,8 +151,8 @@
       #toolbox button {
         appearance: none;
         border: 1px solid rgba(255, 255, 255, 0.18);
-        border-radius: 8px;
-        padding: 6px 10px;
+        border-radius: 6px;
+        padding: 4px 6px;
         color: #e5e7eb;
         font-weight: 600;
         letter-spacing: 0.01em;
@@ -304,10 +314,10 @@
       #toolbox-more[open] > summary svg {
         transform: rotate(180deg);
       }
-      /* Desktop: always open, hide chevron */
+      /* Desktop: show chevron; keep section collapsed by default */
       @media (min-width: 481px) {
         #toolbox-more > summary {
-          display: none !important;
+          display: flex;
         }
         #toolbox-more .toolbox-more-content {
           position: relative;
@@ -319,28 +329,13 @@
       }
       /* Mobile tweaks: keep top-left, shrink footprint */
       @media (max-width: 480px) {
-        #toolbox {
-          min-width: 0 !important;
-          max-width: 68vw;
-          padding: 6px 8px;
-          gap: 4px;
-          border-radius: 10px;
-          font-size: 11px;
-        }
-        #toolbox label {
-          font-size: 10px;
-        }
-        #toolbox button,
-        #toolbox label[for="gpx-input"] {
-          padding: 8px 10px;
-          border-radius: 10px;
-        }
+        /* Keep only summary sizing; all other styles match desktop */
         #toolbox-more {
           margin-top: 4px;
         }
         #toolbox-more > summary {
-          width: 28px;
-          height: 28px;
+          width: 20px;
+          height: 20px;
         }
         #toolbox-more > summary::before {
           width: 9px;
@@ -350,6 +345,11 @@
         }
         #toolbox .button-row {
           gap: 6px;
+        }
+        #toolbox button svg,
+        #toolbox button img {
+          width: 14px;
+          height: 14px;
         }
       }
       /* Prettier file input */
@@ -391,10 +391,10 @@
         box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
       }
       .toolbox-more-content {
-        margin-top: 10px;
+        margin-top: 6px;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
       }
       /* Rad-as-heck custom checkbox */
       #straight-line {
@@ -439,46 +439,10 @@
       #straight-line:checked::after {
         opacity: 1;
       }
-      /* Mobile tweaks: keep top-left, shrink footprint; full-width subtle summary */
-      @media (max-width: 480px) {
-        #toolbox {
-          min-width: 0 !important;
-          max-width: 68vw;
-          padding: 6px 8px;
-          gap: 4px;
-          border-radius: 10px;
-          font-size: 11px;
-        }
-        #toolbox label {
-          font-size: 10px;
-        }
-        #toolbox button,
-        #toolbox label[for="gpx-input"] {
-          padding: 8px 10px;
-          border-radius: 10px;
-        }
-        #toolbox-more {
-          margin-top: 4px;
-        }
-        #toolbox-more > summary {
-          height: 16px;
-          border-radius: 6px;
-        }
-        #toolbox-more > summary svg {
-          width: 10px;
-          height: 10px;
-        }
-        .toolbox-more-content {
-          margin-top: 8px;
-          gap: 8px;
-        }
-        #toolbox .button-row {
-          gap: 6px;
-        }
-      }
+      
       #toolbox button svg {
-        width: 16px;
-        height: 16px;
+        width: 14px;
+        height: 14px;
         stroke: #e5e7eb;
         stroke-width: 2;
         stroke-linecap: round;
@@ -528,6 +492,7 @@
         max-width: 100%;
         box-sizing: border-box;
         -webkit-appearance: none;
+        font-size: 11px; /* match modal button text size */
       }
       #save-modal button {
         appearance: none;
@@ -809,19 +774,29 @@
               </select>
             </div>
             <div class="button-row" style="align-items: center">
-              <button id="delete-route">Clear Route</button>
+              <button id="delete-route" aria-label="Clear route" title="Clear route">
+                <img src="./icons/clear-route.svg" alt="" width="16" height="16" />
+              </button>
             </div>
             <div class="button-row" style="align-items: center">
-              <button id="reverse-route">Reverse Route</button>
+              <button id="reverse-route" aria-label="Reverse route" title="Reverse route">
+                <img src="./icons/reverse-route.svg" alt="" width="16" height="16" />
+              </button>
             </div>
             <div class="button-row" style="align-items: center">
-              <button id="import-modal-open">Import</button>
+              <button id="import-modal-open" aria-label="Import" title="Import">
+                <img src="./icons/import.svg" alt="" width="16" height="16" />
+              </button>
             </div>
             <div class="button-row" style="align-items: center">
-              <button id="open-save-modal">Save</button>
+              <button id="open-save-modal" aria-label="Save" title="Save">
+                <img src="./icons/save.svg" alt="" width="16" height="16" />
+              </button>
             </div>
             <div class="button-row" style="align-items: center">
-              <button id="toggle-elevation-profile">&nbsp;</button>
+              <button id="toggle-elevation-profile" aria-label="Toggle elevation profile" title="Toggle elevation profile">
+                <img src="./icons/elevation-toggle.svg" alt="" width="16" height="16" />
+              </button>
             </div>
           </div>
         </details>

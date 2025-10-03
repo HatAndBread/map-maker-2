@@ -185,7 +185,6 @@ export const state = createState(
     isElevationProfileVisible: (value) => {
       if (!uiElements.toggleElevationProfileButton) return;
       storage.isElevationProfileVisible = value;
-      uiElements.toggleElevationProfileButton.textContent = value ? "Hide Elevation" : "Show Elevation";
       if (!uiElements.elevationProfile) return;
       uiElements.elevationProfile.style.display = value ? "" : "none";
       if (value) {
@@ -388,9 +387,6 @@ if (uiElements.copyShareLinkButton) {
   });
 }
 if (uiElements.toggleElevationProfileButton) {
-  uiElements.toggleElevationProfileButton.textContent = storage.isElevationProfileVisible
-    ? "Hide Elevation"
-    : "Show Elevation";
   uiElements.toggleElevationProfileButton.addEventListener("click", () => {
     state.isElevationProfileVisible = !state.isElevationProfileVisible;
     closeToolboxIfMobile();
