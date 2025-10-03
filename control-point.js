@@ -1,5 +1,5 @@
 import getDirections from "./directions.js";
-import { map, setSectionPreviewData } from "./create-map.js";
+import { setSectionPreviewData } from "./create-map.js";
 import { forceMapUpdate } from "./main.js";
 import { undoManager } from "./main.js";
 import { haptic } from "./haptic.js";
