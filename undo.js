@@ -1,4 +1,5 @@
 import { uiElements } from "./ui-elements.js";
+import { undoManager } from "./main.js";
 export class Undo {
   constructor() {
     this.undos = [];
@@ -39,6 +40,7 @@ export class Undo {
 
   undo() {
     const undo = this.undos.pop();
+    if (!undo) return;
     undo.undo();
     this.redos.push(undo);
     this.updateButtons();
@@ -46,8 +48,24 @@ export class Undo {
 
   redo() {
     const redo = this.redos.pop();
+    if (!redo) return;
     redo.redo();
     this.undos.push(redo);
     this.updateButtons();
   }
 }
+
+let keysDown = new Set();
+
+document.addEventListener("keydown", (e) => {
+  keysDown.add(e.key);
+  if (keysDown.has("Meta") && e.key === "z") {
+    e.preventDefault();
+    undoManager.undo();
+  } else if (keysDown.has("Meta") && e.key === "y") {
+    e.preventDefault();
+    undoManager.redo();
+  }
+});
+
+document.addEventListener("keyup", (e) => keysDown.delete(e.key));

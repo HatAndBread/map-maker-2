@@ -94,6 +94,9 @@ export const uiElements = {
   get elevationProfile() {
     return /** @type {HTMLDivElement | null} */ (document.getElementById("elevation-profile"));
   },
+  get toolboxMore() {
+    return /** @type {HTMLDetailsElement | null} */ (document.getElementById("toolbox-more"));
+  },
 };
 
 // set the initial values to the storage values

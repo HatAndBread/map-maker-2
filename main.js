@@ -521,6 +521,9 @@ document.addEventListener("touchstart", (e) => {
   if (e.target !== map.getCanvas()) {
     return;
   }
+  if (uiElements.toolboxMore?.open && window.innerWidth <= 480) {
+    uiElements.toolboxMore.open = false;
+  }
   handleMouseDown(e);
 });
 
