@@ -158,6 +158,19 @@ export const state = createState(
         console.warn("Tried to set routes to a falsey value");
         return;
       }
+      if (value.length === 0) {
+        console.warn("Tried to set routes to an empty array");
+        return;
+      }
+      if (
+        value.length === 1 &&
+        (value[0].length === 0 || value[0].length === 1) &&
+        uiElements.toggleElevationProfileButton &&
+        state.isElevationProfileVisible
+      ) {
+        // If the route is empty or has only one point, hide the elevation profile
+        uiElements.toggleElevationProfileButton.click();
+      }
       setRoutesData(value);
       controlPointManager.routes = value;
       controlPointManager.update();
@@ -172,7 +185,7 @@ export const state = createState(
     isElevationProfileVisible: (value) => {
       if (!uiElements.toggleElevationProfileButton) return;
       storage.isElevationProfileVisible = value;
-      uiElements.toggleElevationProfileButton.textContent = value ? "Hide Elevation Profile" : "Show Elevation Profile";
+      uiElements.toggleElevationProfileButton.textContent = value ? "Hide Elevation" : "Show Elevation";
       if (!uiElements.elevationProfile) return;
       uiElements.elevationProfile.style.display = value ? "" : "none";
       if (value) {
@@ -376,8 +389,8 @@ if (uiElements.copyShareLinkButton) {
 }
 if (uiElements.toggleElevationProfileButton) {
   uiElements.toggleElevationProfileButton.textContent = storage.isElevationProfileVisible
-    ? "Hide Elevation Profile"
-    : "Show Elevation Profile";
+    ? "Hide Elevation"
+    : "Show Elevation";
   uiElements.toggleElevationProfileButton.addEventListener("click", () => {
     state.isElevationProfileVisible = !state.isElevationProfileVisible;
     closeToolboxIfMobile();

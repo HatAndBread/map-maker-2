@@ -59,13 +59,56 @@ let keysDown = new Set();
 
 document.addEventListener("keydown", (e) => {
   keysDown.add(e.key);
-  if (keysDown.has("Meta") && e.key === "z") {
+  const modifierDown = e.metaKey || e.ctrlKey; // Cmd on macOS, Ctrl on Windows/Linux
+  if (!modifierDown) return;
+  const key = e.key.toLowerCase();
+  if (key === "z") {
     e.preventDefault();
-    undoManager.undo();
-  } else if (keysDown.has("Meta") && e.key === "y") {
+    if (e.shiftKey) {
+      // Shift+Cmd/Ctrl+Z → redo
+      undoManager.redo();
+    } else {
+      // Cmd/Ctrl+Z → undo
+      undoManager.undo();
+    }
+  } else if (key === "y") {
+    // Cmd/Ctrl+Y → redo (Windows/Linux convention)
     e.preventDefault();
     undoManager.redo();
+  } else if (key === "e") {
+    e.preventDefault();
+    uiElements.toggleElevationProfileButton?.click();
+  } else if (key === "s") {
+    e.preventDefault();
+    uiElements.openSaveModalButton?.click();
+  } else if (key === "o") {
+    e.preventDefault();
+    uiElements.importModalOpenButton?.click();
+  } else if (key === "d") {
+    e.preventDefault();
+    uiElements.deleteRouteButton?.click();
+  } else if (key === "r") {
+    e.preventDefault();
+    uiElements.reverseRouteButton?.click();
   }
 });
 
 document.addEventListener("keyup", (e) => keysDown.delete(e.key));
+
+// Desktop-only tooltips for keyboard shortcuts
+(() => {
+  const isTouch = "ontouchstart" in window || (navigator && (navigator.maxTouchPoints || 0) > 0);
+  if (isTouch) return;
+  const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+  const isMac = /Mac|iPhone|iPad|iPod/i.test(ua);
+  const mod = isMac ? "⌘" : "Ctrl+";
+  const redoHint = isMac ? "Shift+⌘Z" : "Ctrl+Y";
+  uiElements.undoButton && (uiElements.undoButton.title = `Undo (${mod}Z)`);
+  uiElements.redoButton && (uiElements.redoButton.title = `Redo (${redoHint})`);
+  uiElements.toggleElevationProfileButton &&
+    (uiElements.toggleElevationProfileButton.title = `Toggle elevation profile (${mod}E)`);
+  uiElements.openSaveModalButton && (uiElements.openSaveModalButton.title = `Save (${mod}S)`);
+  uiElements.importModalOpenButton && (uiElements.importModalOpenButton.title = `Import (${mod}O)`);
+  uiElements.deleteRouteButton && (uiElements.deleteRouteButton.title = `Clear route (${mod}D)`);
+  uiElements.reverseRouteButton && (uiElements.reverseRouteButton.title = `Reverse route (${mod}R)`);
+})();

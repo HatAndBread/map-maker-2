@@ -15,8 +15,11 @@ const three = [
   100, 114, 105, 51, 49, 117, 118, 48, 105, 105, 112, 103, 118, 115, 112, 116, 118, 97, 46, 97, 112, 112, 115, 46, 103,
   111, 111, 103, 108, 101, 117, 115, 101, 114, 99, 111, 110, 116, 101, 110, 116, 46, 99, 111, 109,
 ];
+
+const x = (y) => y.map((n) => String.fromCodePoint(n)).join("");
+
 export default {
-  google: one.map((n) => String.fromCodePoint(n)).join(""),
-  mapbox: two.map((n) => String.fromCodePoint(n)).join(""),
-  googleClient: three.map((n) => String.fromCodePoint(n)).join(""),
+  google: x(one),
+  mapbox: x(two),
+  googleClient: x(three),
 };
