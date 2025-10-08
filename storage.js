@@ -52,7 +52,10 @@ function writeState(state) {
       store.put(state, "root");
       tx.oncomplete = () => db.close();
       tx.onabort = () => db.close();
-      tx.onerror = () => db.close();
+      tx.onerror = () => {
+        db.close();
+        deleteDB();
+      };
     })
     .catch(() => {
       // clear the state
