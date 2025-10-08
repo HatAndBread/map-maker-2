@@ -367,7 +367,9 @@ const boundHasAlreadyBeenQueried = (bounds) => {
   });
 };
 
+let queryingTrails = false;
 map.on("moveend", () => {
+  if (queryingTrails) return;
   const center = map.getCenter();
   elevationMap.setCenter(center);
   storage.latestLngLat = [center.lng, center.lat];
@@ -399,9 +401,8 @@ map.on("moveend", () => {
     removeMemoryHogs();
   }
 
-  storage.queriedBounds = [...storage.queriedBounds, expandedBounds];
-
   const bbox = `${expandedBounds._sw.lat},${expandedBounds._sw.lng},${expandedBounds._ne.lat},${expandedBounds._ne.lng}`;
+  queryingTrails = true;
   overpass
     .queryTrails(bbox)
     .then((data) => {
@@ -418,10 +419,15 @@ map.on("moveend", () => {
       });
       storage.trails = updatedTrails;
       storage.tracks = updatedTracks;
+      storage.queriedBounds = [...storage.queriedBounds, expandedBounds];
+      queryingTrails = false;
       drawOverpassTrails();
     })
     .catch((err) => {
       console.error(err);
+    })
+    .finally(() => {
+      queryingTrails = false;
     });
 });
 map.addControl(
